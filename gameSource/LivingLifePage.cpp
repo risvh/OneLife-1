@@ -51,6 +51,7 @@
 #include "ObjectPickable.h"
 
 #include "hetuwmod.h"
+#include "minitech.h"
 
 static ObjectPickable objectPickable;
 
@@ -130,6 +131,7 @@ static float pencilErasedFontExtraFade = 0.75;
 
 extern doublePair lastScreenViewCenter;
 doublePair LivingLifePage::hetuwGetLastScreenViewCenter() { return lastScreenViewCenter; }
+doublePair LivingLifePage::minitechGetLastScreenViewCenter() { return lastScreenViewCenter; }
 
 static char shouldMoveCamera = true;
 
@@ -970,6 +972,14 @@ static char *getDisplayObjectDescription( int inID ) {
     stripDescriptionComment( upper );
     return upper;
     }
+	
+char *LivingLifePage::minitechGetDisplayObjectDescription( int objId ) { 
+    ObjectRecord *o = getObject( objId );
+    if( o == NULL ) {
+		return "";
+    }
+	return getDisplayObjectDescription(objId);
+}
 
 
 
@@ -2633,6 +2643,14 @@ LivingLifePage::LivingLifePage()
 	mDeathReason = NULL;
 	HetuwMod::setLivingLifePage(this, &gameObjects, mMapContainedStacks, mMapSubContainedStacks, mMapD, mCurMouseOverID);
 
+	minitech::setLivingLifePage(
+		this, 
+		&gameObjects, 
+		mMapD, 
+		pathFindingD, 
+		mMapContainedStacks, 
+		mMapSubContainedStacks);
+	
     }
 
 
@@ -6655,7 +6673,7 @@ void LivingLifePage::draw( doublePair inViewCenter,
 
     char pointerDrawn = false;
 
-    if( ! takingPhoto && mCurrentHintTargetObject > 0 ) {
+    if( ! takingPhoto && mCurrentHintTargetObject > 0 && !minitech::minitechEnabled ) {
         // draw pointer to closest hint target object
         
         char drawn = false;
@@ -8098,7 +8116,7 @@ void LivingLifePage::draw( doublePair inViewCenter,
     for( int i=0; i<NUM_HINT_SHEETS; i++ ) {
         if( ! equal( mHintPosOffset[i], mHintHideOffset[i] ) 
             &&
-            mHintMessage[i] != NULL ) {
+            mHintMessage[i] != NULL && !minitech::minitechEnabled ) {
             
             doublePair hintPos  = 
                 add( mHintPosOffset[i], lastScreenViewCenter );
@@ -9127,6 +9145,15 @@ void LivingLifePage::draw( doublePair inViewCenter,
         }
 
 	HetuwMod::livingLifeDraw();
+
+	// minitech
+	float worldMouseX, worldMouseY;
+	getLastMouseScreenPos( &lastScreenMouseX, &lastScreenMouseY );
+	screenToWorld( lastScreenMouseX,
+				   lastScreenMouseY,
+				   &worldMouseX,
+				   &worldMouseY );
+	minitech::livingLifeDraw(worldMouseX, worldMouseY);
 
     if( vogMode ) {
         // draw again, so we can see picker
@@ -11494,6 +11521,7 @@ void LivingLifePage::step() {
         sendToServerSocket( (char*)"KA 0 0#" );
         }
     
+	minitech::livingLifeStep();
 	HetuwMod::livingLifeStep();
 
     char *message = getNextServerMessage();
@@ -12689,6 +12717,7 @@ void LivingLifePage::step() {
                     // first map chunk just recieved
 
 					HetuwMod::initOnServerJoin();
+					minitech::initOnBirth();
                     
                     char found = false;
                     int closestX = 0;
@@ -14235,6 +14264,8 @@ void LivingLifePage::step() {
                             mNextHintObjectID = existing->holdingID;
                             mNextHintIndex = 
                                 mHintBookmarks[ mNextHintObjectID ];
+								
+							minitech::currentHintObjId = mNextHintObjectID;
                             }
                         
 
@@ -15714,6 +15745,7 @@ void LivingLifePage::step() {
                 if( ourID != lastPlayerID ) {
                     homePosStack.deleteAll();
 					HetuwMod::initOnBirth();
+					minitech::initOnBirth();
                     // different ID than last time, delete old home markers
                     oldHomePosStack.deleteAll();
                     }
@@ -19655,6 +19687,8 @@ bool LivingLifePage::hetuwMouseIsDown() {
 }
 
 void LivingLifePage::pointerDown( float inX, float inY ) {
+	if (minitech::livingLifePageMouseDown( inX, inY )) return;
+	
 	if (HetuwMod::livingLifePageMouseDown( inX, inY ))
 		return;
 
@@ -20121,17 +20155,20 @@ void LivingLifePage::pointerDown( float inX, float inY ) {
                 // give hint about dest object which will be unchanged 
                 mNextHintObjectID = destID;
                 mNextHintIndex = mHintBookmarks[ destID ];
+				minitech::currentHintObjId = destID;
                 }
             else if( tr->newActor > 0 && 
                      ourLiveObject->holdingID != tr->newActor ) {
                 // give hint about how what we're holding will change
                 mNextHintObjectID = tr->newActor;
                 mNextHintIndex = mHintBookmarks[ tr->newTarget ];
+				minitech::currentHintObjId = tr->newActor;
                 }
             else if( tr->newTarget > 0 ) {
                 // give hint about changed target after we act on it
                 mNextHintObjectID = tr->newTarget;
                 mNextHintIndex = mHintBookmarks[ tr->newTarget ];
+				minitech::currentHintObjId = tr->newTarget;
                 }
             }
         else {
@@ -20141,6 +20178,7 @@ void LivingLifePage::pointerDown( float inX, float inY ) {
             if( getTrans( 0, destID ) == NULL ) {
                 mNextHintObjectID = destID;
                 mNextHintIndex = mHintBookmarks[ destID ];
+				minitech::currentHintObjId = destID;
                 }
             }
         }
@@ -21227,6 +21265,8 @@ void LivingLifePage::keyDown( unsigned char inASCII ) {
         return;
         }
 
+	if (minitech::livingLifeKeyDown(inASCII)) return;
+	
 	if (HetuwMod::livingLifeKeyDown(inASCII))
 		return;
 
@@ -21575,6 +21615,8 @@ void LivingLifePage::keyDown( unsigned char inASCII ) {
                                     // not blank
                                     mHintFilterString = 
                                         stringDuplicate( trimmedFilterString );
+										
+									minitech::hintStr = mHintFilterString;
                                     }
                             
                                 delete [] trimmedFilterString;
