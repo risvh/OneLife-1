@@ -15,7 +15,8 @@
 #include "minorGems/game/drawUtils.h"
 #include "minorGems/util/stringUtils.h"
 #include "minorGems/game/Font.h"
-// #include "minorGems/util/SettingsManager.h"
+
+#include "minorGems/util/SettingsManager.h"
 
 
 #include "minitech.h"
@@ -77,6 +78,8 @@ void minitech::setLivingLifePage(
 	pathFindingD = inPathFindingD;
 	mMapContainedStacks = inmMapContainedStacks;
 	mMapSubContainedStacks = inmMapSubContainedStacks;
+	
+	minitechEnabled = SettingsManager::getIntSetting( "useMinitech", 1 );
 }
 
 void minitech::initOnBirth() { 
