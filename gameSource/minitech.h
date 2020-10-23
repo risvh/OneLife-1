@@ -48,6 +48,7 @@ public:
 	static SimpleVector<SimpleVector<int>> *mMapSubContainedStacks;
 	
 	static bool minitechMinimized;
+	static unsigned char minimizeKey;
 	static int stepCount;
 	static float currentX;
 	static float currentY;

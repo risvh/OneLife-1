@@ -44,6 +44,7 @@ SimpleVector<int> *minitech::mMapContainedStacks;
 SimpleVector<SimpleVector<int>> *minitech::mMapSubContainedStacks;
 
 bool minitech::minitechMinimized = true;
+unsigned char minitech::minimizeKey = 'o';
 int minitech::stepCount;
 float minitech::currentX;
 float minitech::currentY;
@@ -1300,6 +1301,10 @@ bool minitech::livingLifeKeyDown(unsigned char inASCII) {
 	
 	if (!commandKey && shiftKey && inASCII == 9) {
 		currentTwoTechPage -= 1;
+	}
+	
+	if (!shiftKey && !commandKey && toupper(inASCII) == toupper(minimizeKey)) {
+		minitechMinimized = !minitechMinimized;
 	}
 	
 	// if ( inASCII == 'p' ) {
