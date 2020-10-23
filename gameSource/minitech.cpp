@@ -139,6 +139,22 @@ int minitech::getDummyParent(int objId) {
 	return objId;
 }
 
+int minitech::getDummyLastUse(int objId) {
+	if (objId <= 0 || objId >= maxObjects) return objId;
+	ObjectRecord* o = getObject(objId);
+	if (o != NULL) {
+		int parentID = o->id;
+		if (o->isUseDummy) {
+			parentID = o->useDummyParent;
+		}
+		ObjectRecord* parent = getObject(parentID);
+		if (parent->numUses > 1) {
+			return parent->useDummyIDs[0];
+		}
+	}
+	return objId;
+}
+
 bool minitech::isCategory(int objId) {
 	if (objId <= 0) return false;
 	CategoryRecord *c = getCategory( objId );
@@ -266,6 +282,64 @@ bool minitech::isUseDummy(int objId) {
 	return o->isUseDummy;
 }
 
+bool minitech::isUseDummyAndNotLastUse(int objId) {
+	if (objId <= 0) return false;
+	ObjectRecord* o = getObject(objId);
+	if (o == NULL) return false;
+	if (o->isUseDummy) {
+		if (o->thisUseDummyIndex != 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+int minitech::getDummyUse(int objId) {
+	//return -1 if not applicable
+	//return 0 if it is the parent object
+	//then 1 is the last use, and 2 is #use 2 etc.
+	if (objId <= 0) return -1;
+	ObjectRecord* o = getObject(objId);
+	if (o == NULL) return -1;
+	if (o->numUses > 1) return 0;
+	if (o->isUseDummy) {
+		return o->thisUseDummyIndex + 1;
+	}
+	return -1;
+}
+
+int minitech::compareObjUse(int idA, int idB) {
+	//return -1 if a and b have the same parent and a's use > b's
+	//return 1 if a and b have the same parent and a's use < b's
+	//return 0 otherwise
+	
+	ObjectRecord* a = getObject(idA);
+	ObjectRecord* b = getObject(idB);
+	
+	if (a == NULL || b == NULL) return 0;
+	
+	int aParentId = 0;
+	int bParentId = 0;
+	if (a->numUses > 1) aParentId = a->id;
+	if (b->numUses > 1) bParentId = b->id;
+	if (a->isUseDummy) aParentId = a->useDummyParent;
+	if (b->isUseDummy) bParentId = b->useDummyParent;
+	
+	if (aParentId == 0 || bParentId == 0) return 0;
+	if (aParentId != bParentId) return 0;
+	
+	int aUse = 0;
+	int bUse = 0;
+	if (aParentId == a->id) aUse = a->numUses;
+	if (bParentId == b->id) bUse = b->numUses;
+	if (a->isUseDummy) aUse = a->thisUseDummyIndex + 1;
+	if (b->isUseDummy) bUse = b->thisUseDummyIndex + 1;
+	
+	if (aUse > bUse) return -1;
+	if (aUse < bUse) return 1;
+	return 0;
+}
+
 bool minitech::isProbabilitySet(int objId) {
 	if (objId <= 0) return false;
 	CategoryRecord *c = getCategory( objId );
@@ -282,6 +356,7 @@ float minitech::getTransProbability(TransRecord* trans) {
 	int idD = trans->newTarget;
 	
 	TransRecord* t = getTrans( idA, idB, trans->lastUseActor, trans->lastUseTarget );
+	if (t == NULL) return -1.0;
 	int origIdC = t->newActor;
 	int origIdD = t->newTarget;
 	
@@ -417,8 +492,8 @@ vector<TransRecord*> minitech::getUsesTrans(int objId) {
 			continue;
 		}
 		
-		if ( isUseDummy(idA) && isUseDummy(idC) ) continue;
-		if ( isUseDummy(idB) && isUseDummy(idD) ) continue;
+		if ( isUseDummyAndNotLastUse(idA) && isUseDummyAndNotLastUse(idC) ) continue;
+		if ( isUseDummyAndNotLastUse(idB) && isUseDummyAndNotLastUse(idD) ) continue;
 		if ( isCategory(idA) || isCategory(idB) || isCategory(idC) || isCategory(idD) ) continue;
 		if ( trans->lastUseActor || trans->lastUseTarget ) continue;
 		
@@ -449,8 +524,8 @@ vector<TransRecord*> minitech::getProdTrans(int objId) {
 		int idD = trans->newTarget;
 		
 		if ( idA == objId || idB == objId ) continue;
-		if ( isUseDummy(idA) && isUseDummy(idC) ) continue;
-		if ( isUseDummy(idB) && isUseDummy(idD) ) continue;
+		if ( isUseDummyAndNotLastUse(idA) && isUseDummyAndNotLastUse(idC) ) continue;
+		if ( isUseDummyAndNotLastUse(idB) && isUseDummyAndNotLastUse(idD) ) continue;
 		if ( isCategory(idA) || isCategory(idB) || isCategory(idC) || isCategory(idD) ) continue;
 		if ( trans->lastUseActor || trans->lastUseTarget ) continue;
 		
@@ -841,7 +916,7 @@ void minitech::updateDrawTwoTech() {
 		doublePair posLineLCen = {
 			posLT.x + paddingX, 
 			posLT.y - paddingY - contentOffsetY - iconSize/2
-			};	
+			};
 		
 		int currHintObjId = 0;
 		vector<pair<mouseListener*,int>> iconListenerIds;
@@ -913,6 +988,8 @@ void minitech::updateDrawTwoTech() {
 			iconListenerIds.push_back(iconAListenerId);
 			if (iconAListener->mouseClick && trans->actor > 0) {
 				currentHintObjId = trans->actor;
+				if (compareObjUse(trans->actor, trans->newActor) == -1) currentHintObjId = getDummyParent(trans->actor);
+				if (compareObjUse(trans->actor, trans->newActor) == 1) currentHintObjId = getDummyLastUse(trans->actor);
 			}
 			
 			pos.x += iconSize;
@@ -932,6 +1009,8 @@ void minitech::updateDrawTwoTech() {
 			iconListenerIds.push_back(iconBListenerId);
 			if (iconBListener->mouseClick && trans->target > 0) {
 				currentHintObjId = trans->target;
+				if (compareObjUse(trans->target, trans->newTarget) == -1) currentHintObjId = getDummyParent(trans->target);
+				if (compareObjUse(trans->target, trans->newTarget) == 1) currentHintObjId = getDummyLastUse(trans->target);
 			}
 			
 			pos.x += iconSize;
@@ -969,6 +1048,8 @@ void minitech::updateDrawTwoTech() {
 			iconListenerIds.push_back(iconCListenerId);
 			if (iconCListener->mouseClick && trans->newActor > 0) {
 				currentHintObjId = trans->newActor;
+				if (compareObjUse(trans->newActor, trans->actor) == -1) currentHintObjId = getDummyParent(trans->newActor);
+				if (compareObjUse(trans->newActor, trans->actor) == 1) currentHintObjId = getDummyLastUse(trans->newActor);
 			}
 			
 			pos.x += iconSize;
@@ -988,6 +1069,8 @@ void minitech::updateDrawTwoTech() {
 			iconListenerIds.push_back(iconDListenerId);
 			if (iconDListener->mouseClick && trans->newTarget > 0) {
 				currentHintObjId = trans->newTarget;
+				if (compareObjUse(trans->newTarget, trans->target) == -1) currentHintObjId = getDummyParent(trans->newTarget);
+				if (compareObjUse(trans->newTarget, trans->target) == 1) currentHintObjId = getDummyLastUse(trans->newTarget);
 			}
 		}
 		
@@ -1188,13 +1271,6 @@ void minitech::livingLifeDraw(float mX, float mY) {
 		if ( !nextListener->mouseHover && !nextListener->mouseClick ) {
 			nextListener = NULL;
 		}
-	}
-	
-	
-		
-	ObjectRecord* currentHintObj = getObject(currentHintObjId);
-	if (currentHintObj != NULL) {
-		if (currentHintObj->isUseDummy) currentHintObjId = currentHintObj->useDummyParent;
 	}
 	
 	if ( lastHintObjId == 0 && currentHintObjId != 0 ) minitechMinimized = false;
