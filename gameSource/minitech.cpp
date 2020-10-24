@@ -705,6 +705,17 @@ void minitech::drawTileRect( int x, int y, string color, bool flashing ) {
 	drawRect( startPos, CELL_D/2, CELL_D/2 );
 }
 
+void minitech::drawBox(doublePair posCen, float height, float width, float lineWidth) {
+	doublePair posCenTopSide = {posCen.x, posCen.y + ( height / 2 - lineWidth / 2 )};
+	doublePair posCenBottomSide = {posCen.x, posCen.y - ( height / 2 - lineWidth / 2 )};
+	doublePair posCenRightSide = {posCen.x + ( width / 2 - lineWidth / 2 ), posCen.y};
+	doublePair posCenLeftSide = {posCen.x - ( width / 2 - lineWidth / 2 ), posCen.y};
+	
+	drawRect( posCenTopSide, width/2 - lineWidth, lineWidth/2 );
+	drawRect( posCenBottomSide, width/2 - lineWidth, lineWidth/2 );
+	drawRect( posCenRightSide, lineWidth/2, height/2 );
+	drawRect( posCenLeftSide, lineWidth/2, height/2 );
+}
 
 
 
@@ -943,7 +954,7 @@ void minitech::updateDrawTwoTech() {
 			if (lineListener->mouseHover) {
 				doublePair posLineCen = {posCenter.x, posLineLCen.y};
 				setDrawColor( 1, 1, 1, 0.3 );
-				drawRect(posLineCen, recWidth/2, iconSize/2);
+				drawRect(posLineCen, recWidth/2, iconSize/2 * 1.25);
 				
 				int holdingID = ourLiveObject->holdingID;
 				holdingID = getDummyParent(holdingID);
@@ -963,8 +974,17 @@ void minitech::updateDrawTwoTech() {
 			doublePair iconBR;
 			
 			doublePair pos = posLineLCen;
-			
 			pos.x += iconSize/2;
+			iconLT = {pos.x - iconSize/2, pos.y + iconSize/2};
+			iconBR = {pos.x + iconSize/2, pos.y - iconSize/2};		
+			mouseListener* iconAListener = getMouseListenerByArea(
+				&twotechMouseListeners, sub(iconLT, screenPos), sub(iconBR, screenPos));
+			pair<mouseListener*,int> iconAListenerId(iconAListener, trans->actor);
+			iconListenerIds.push_back(iconAListenerId);
+			if (iconAListener->mouseHover && trans->actor > 0) {
+				setDrawColor( 1, 1, 1, 0.3 );
+				drawRect(pos, iconSize/2, iconSize/2);
+			}
 			if (trans->actor == -1 && trans->autoDecaySeconds != 0) {
 				if ( trans->autoDecaySeconds < 0 ) {
 					drawObj(pos, trans->actor, "WAIT", to_string(- trans->autoDecaySeconds) + " HR");
@@ -980,38 +1000,38 @@ void minitech::updateDrawTwoTech() {
 			} else {
 				drawObj(pos, trans->actor);
 			}
-			iconLT = {pos.x - iconSize/2, pos.y + iconSize/2};
-			iconBR = {pos.x + iconSize/2, pos.y - iconSize/2};		
-			mouseListener* iconAListener = getMouseListenerByArea(
-				&twotechMouseListeners, sub(iconLT, screenPos), sub(iconBR, screenPos));
-			pair<mouseListener*,int> iconAListenerId(iconAListener, trans->actor);
-			iconListenerIds.push_back(iconAListenerId);
 			if (iconAListener->mouseClick && trans->actor > 0) {
 				currentHintObjId = trans->actor;
 				if (compareObjUse(trans->actor, trans->newActor) == -1) currentHintObjId = getDummyParent(trans->actor);
 				if (compareObjUse(trans->actor, trans->newActor) == 1) currentHintObjId = getDummyLastUse(trans->actor);
 			}
+
 			
 			pos.x += iconSize;
 			drawStr("+", pos, "handwritten", false);
 			
 			pos.x += iconSize;
-			if (trans->target == -1) {
-				drawObj(pos, trans->target, "EMPTY", "GROUND");
-			} else {
-				drawObj(pos, trans->target);
-			}
 			iconLT = {pos.x - iconSize/2, pos.y + iconSize/2};
 			iconBR = {pos.x + iconSize/2, pos.y - iconSize/2};		
 			mouseListener* iconBListener = getMouseListenerByArea(
 				&twotechMouseListeners, sub(iconLT, screenPos), sub(iconBR, screenPos));
 			pair<mouseListener*,int> iconBListenerId(iconBListener, trans->target);
 			iconListenerIds.push_back(iconBListenerId);
+			if (iconBListener->mouseHover && trans->target > 0) {
+				setDrawColor( 1, 1, 1, 0.3 );
+				drawRect(pos, iconSize/2, iconSize/2);
+			}
+			if (trans->target == -1) {
+				drawObj(pos, trans->target, "EMPTY", "GROUND");
+			} else {
+				drawObj(pos, trans->target);
+			}
 			if (iconBListener->mouseClick && trans->target > 0) {
 				currentHintObjId = trans->target;
 				if (compareObjUse(trans->target, trans->newTarget) == -1) currentHintObjId = getDummyParent(trans->target);
 				if (compareObjUse(trans->target, trans->newTarget) == 1) currentHintObjId = getDummyLastUse(trans->target);
 			}
+			
 			
 			pos.x += iconSize;
 			float transProb = getTransProbability(trans);
@@ -1027,6 +1047,16 @@ void minitech::updateDrawTwoTech() {
 			}
 			
 			pos.x += iconSize;
+			iconLT = {pos.x - iconSize/2, pos.y + iconSize/2};
+			iconBR = {pos.x + iconSize/2, pos.y - iconSize/2};		
+			mouseListener* iconCListener = getMouseListenerByArea(
+				&twotechMouseListeners, sub(iconLT, screenPos), sub(iconBR, screenPos));
+			pair<mouseListener*,int> iconCListenerId(iconCListener, trans->newActor);
+			iconListenerIds.push_back(iconCListenerId);
+			if (iconCListener->mouseHover && trans->newActor > 0) {
+				setDrawColor( 1, 1, 1, 0.3 );
+				drawRect(pos, iconSize/2, iconSize/2);
+			}
 			if (trans->actor > 0 && trans->target > 0 && trans->newActor == 0) {
 				drawObj(pos, trans->newActor);
 			} else if (trans->actor == -1 && trans->autoDecaySeconds != 0 && trans->newActor == 0) {
@@ -1040,12 +1070,6 @@ void minitech::updateDrawTwoTech() {
 			} else {
 				drawObj(pos, trans->newActor);
 			}
-			iconLT = {pos.x - iconSize/2, pos.y + iconSize/2};
-			iconBR = {pos.x + iconSize/2, pos.y - iconSize/2};		
-			mouseListener* iconCListener = getMouseListenerByArea(
-				&twotechMouseListeners, sub(iconLT, screenPos), sub(iconBR, screenPos));
-			pair<mouseListener*,int> iconCListenerId(iconCListener, trans->newActor);
-			iconListenerIds.push_back(iconCListenerId);
 			if (iconCListener->mouseClick && trans->newActor > 0) {
 				currentHintObjId = trans->newActor;
 				if (compareObjUse(trans->newActor, trans->actor) == -1) currentHintObjId = getDummyParent(trans->newActor);
@@ -1060,13 +1084,17 @@ void minitech::updateDrawTwoTech() {
 			}
 			
 			pos.x += iconSize;
-			drawObj(pos, trans->newTarget, "EMPTY", "GROUND");
 			iconLT = {pos.x - iconSize/2, pos.y + iconSize/2};
 			iconBR = {pos.x + iconSize/2, pos.y - iconSize/2};		
 			mouseListener* iconDListener = getMouseListenerByArea(
 				&twotechMouseListeners, sub(iconLT, screenPos), sub(iconBR, screenPos));
 			pair<mouseListener*,int> iconDListenerId(iconDListener, trans->newTarget);
 			iconListenerIds.push_back(iconDListenerId);
+			if (iconDListener->mouseHover && trans->newTarget > 0) {
+				setDrawColor( 1, 1, 1, 0.3 );
+				drawRect(pos, iconSize/2, iconSize/2);
+			}
+			drawObj(pos, trans->newTarget, "EMPTY", "GROUND");
 			if (iconDListener->mouseClick && trans->newTarget > 0) {
 				currentHintObjId = trans->newTarget;
 				if (compareObjUse(trans->newTarget, trans->target) == -1) currentHintObjId = getDummyParent(trans->newTarget);
