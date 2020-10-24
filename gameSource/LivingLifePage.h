@@ -480,6 +480,7 @@ class LivingLifePage : public GamePage, public ActionListener {
 			
 		doublePair minitechGetLastScreenViewCenter();
 		char *minitechGetDisplayObjectDescription(int objId);
+		bool minitechSayFieldIsFocused() { return mSayField.isFocused(); }
 
 		void hetuwSetPanelOffsets();
 		bool hetuwSayFieldIsFocused() { return mSayField.isFocused(); }
