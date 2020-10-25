@@ -1061,12 +1061,12 @@ void minitech::updateDrawTwoTech() {
 			drawStr("=", pos, "handwritten", false);
 			if ( transProb != -1 ) {
 				string firstPart = "=";
-				string secondPart = to_string( transProb * 100 );
-				secondPart = secondPart.substr(0, secondPart.find(".") + 2) + "PCT";
+				string secondLine = to_string( transProb * 100 );
+				secondLine = secondLine.substr(0, secondLine.find(".") + 2) + "PCT";
 				doublePair chanceLinePos = pos;
 				float tinyLineHeight = 15.0*guiScale;
 				chanceLinePos.y -= tinyLineHeight;
-				drawStr(secondPart, chanceLinePos, "tinyHandwritten", false);
+				drawStr(secondLine, chanceLinePos, "tinyHandwritten", false);
 			}
 			
 			pos.x += iconSize;
@@ -1093,6 +1093,14 @@ void minitech::updateDrawTwoTech() {
 			} else {
 				drawObj(pos, trans->newActor);
 			}
+			if (trans->actorChangeChance != 1.0) {
+				string secondLine = to_string( trans->actorChangeChance * 100 );
+				secondLine = secondLine.substr(0, secondLine.find(".") + 2) + "PCT";
+				doublePair chanceLinePos = pos;
+				float tinyLineHeight = 15.0*guiScale;
+				chanceLinePos.y -= tinyLineHeight;
+				drawStr(secondLine, chanceLinePos, "tinyHandwritten", false);
+			}
 			if (iconCListener->mouseClick && trans->newActor > 0) {
 				currentHintObjId = trans->newActor;
 				if (compareObjUse(trans->newActor, trans->actor) == -1) currentHintObjId = getDummyParent(trans->newActor);
@@ -1118,6 +1126,14 @@ void minitech::updateDrawTwoTech() {
 				drawRect(pos, iconSize/2, iconSize/2);
 			}
 			drawObj(pos, trans->newTarget, "EMPTY", "GROUND");
+			if (trans->targetChangeChance != 1.0) {
+				string secondLine = to_string( trans->targetChangeChance * 100 );
+				secondLine = secondLine.substr(0, secondLine.find(".") + 2) + "PCT";
+				doublePair chanceLinePos = pos;
+				float tinyLineHeight = 15.0*guiScale;
+				chanceLinePos.y -= tinyLineHeight;
+				drawStr(secondLine, chanceLinePos, "tinyHandwritten", false);
+			}
 			if (iconDListener->mouseClick && trans->newTarget > 0) {
 				currentHintObjId = trans->newTarget;
 				if (compareObjUse(trans->newTarget, trans->target) == -1) currentHintObjId = getDummyParent(trans->newTarget);
