@@ -722,7 +722,7 @@ void minitech::drawBox(doublePair posCen, float height, float width, float lineW
 vector<TransRecord*> minitech::sortUsesTrans(vector<TransRecord*> unsortedTrans) {
 	
 	vector<bool> boolCloseVect = getObjIsCloseVector();
-	vector<float> distScore(unsortedTrans.size(), 0);
+	vector<float> rankScores(unsortedTrans.size(), 0);
 	
 	for ( int i=0; i<unsortedTrans.size(); i++ ) {
 		TransRecord *trans = unsortedTrans[i];
@@ -735,38 +735,45 @@ vector<TransRecord*> minitech::sortUsesTrans(vector<TransRecord*> unsortedTrans)
 		
 		GridPos currentPos = {currentX, currentY};
 		
-		float punishmentScore = 16.0;
+		float punishmentScore = 9999.0;
 		
-		if (ourLiveObject->holdingID != idA) {
-			if (idA <= 0) {
-				distScore[i] += punishmentScore;
-			} else if ( boolCloseVect[idA] ) {
-				GridPos pos = getClosestTile(currentPos, idA);
-				float dist = sqrt(pow(currentX - pos.x, 2) + pow(currentY - pos.y, 2));
-				distScore[i] += dist;
-			} else {
-				distScore[i] += 9999;
-			}
+		//idea behind the sorting:
+		//- show transition involving ingredients (actor and target) which are nearby first, sort these by distance
+		//- sort the far-away transitions by the object depth of the ingredients
+
+		if (idA == ourLiveObject->holdingID || idA <= 0) {
+			rankScores[i] += 0;
+		} else if (boolCloseVect[idA]) {
+			GridPos pos = getClosestTile(currentPos, idA);
+			float dist = sqrt(pow(currentX - pos.x, 2) + pow(currentY - pos.y, 2));
+			rankScores[i] += dist;
+		} else {
+			//+1 to make sure transitions with 0 depth, naturally spawning ingredients won't show up on top
+			rankScores[i] += punishmentScore * (getObjectDepth(idA) + 1); 
 		}
-		if (ourLiveObject->holdingID != idB) {
-			if (idB <= 0) {
-				distScore[i] += punishmentScore;
-			} else if ( boolCloseVect[idB] ) {
-				GridPos pos = getClosestTile(currentPos, idB);
-				float dist = sqrt(pow(currentX - pos.x, 2) + pow(currentY - pos.y, 2));
-				distScore[i] += dist;
-			} else {
-				distScore[i] += 9999 + idB; //ranking empty hand trans by id
-			}
+
+		if (idB == ourLiveObject->holdingID || idB <= 0) {
+				  
+			rankScores[i] += 0;
+		} else if (boolCloseVect[idB]) {
+			GridPos pos = getClosestTile(currentPos, idB);
+			float dist = sqrt(pow(currentX - pos.x, 2) + pow(currentY - pos.y, 2));
+			rankScores[i] += dist;
+		} else {
+			rankScores[i] += punishmentScore * (getObjectDepth(idB) + 1);
+	
 		}
-		if ( idA == idB ) {
-			distScore[i] += punishmentScore; //two stackable items stacked together
+
+		//dont always show the transition to stack the object we are currently holding
+		if ( idA == idB && idA == ourLiveObject->holdingID ) {
+			rankScores[i] += punishmentScore * (getObjectDepth(idA) + 1);
 		}
+		
 	}
 	
 	vector<std::size_t> index(unsortedTrans.size());
 	iota(index.begin(), index.end(), 0);
-	sort(index.begin(), index.end(), [&](size_t a, size_t b) { return distScore[a] < distScore[b]; });
+	sort(index.begin(), index.end(), [&](size_t a, size_t b) { return rankScores[a] < rankScores[b]; });
 	
 	vector<TransRecord*> temp(unsortedTrans.size());
 	for ( int i=0; i<unsortedTrans.size(); i++ ) {
@@ -778,7 +785,7 @@ vector<TransRecord*> minitech::sortUsesTrans(vector<TransRecord*> unsortedTrans)
 vector<TransRecord*> minitech::sortProdTrans(vector<TransRecord*> unsortedTrans) {
 	
 	vector<bool> boolCloseVect = getObjIsCloseVector();
-	vector<float> distScore(unsortedTrans.size(), 0);
+	vector<float> rankScores(unsortedTrans.size(), 0);
 	
 	for ( int i=0; i<unsortedTrans.size(); i++ ) {
 		TransRecord *trans = unsortedTrans[i];
@@ -793,37 +800,53 @@ vector<TransRecord*> minitech::sortProdTrans(vector<TransRecord*> unsortedTrans)
 		
 		float punishmentScore = 32.0;
 		
-		if (ourLiveObject->holdingID != idA) {
-			if (idA <= 0) {
-				
-			} else if ( boolCloseVect[idA] ) {
-				GridPos pos = getClosestTile(currentPos, idA);
-				float dist = sqrt(pow(currentX - pos.x, 2) + pow(currentY - pos.y, 2));
-				distScore[i] += dist;
-			} else {
-				distScore[i] += punishmentScore;
-			}
-		}
-		if (ourLiveObject->holdingID != idB) {
-			if (idB <= 0) {
-				
-			} else if ( boolCloseVect[idB] ) {
-				GridPos pos = getClosestTile(currentPos, idB);
-				float dist = sqrt(pow(currentX - pos.x, 2) + pow(currentY - pos.y, 2));
-				distScore[i] += dist;
-			} else {
-				distScore[i] += punishmentScore + idB; //ranking empty hand trans by id
-			}
-		}
-		if ( idB == -1 ) distScore[i] += 9999; //item + Bare Ground
-		if ( idA > 0 && idB > 0  ) distScore[i] -= 9999; //actual crafting instead of empty hand use
-		if ( idC <= 0  ) distScore[i] -= 9999; //actualy crafting comsuming actor
+		//idea behind the sorting:
+		//- show craft-from-scratch transition on the very top
+		//- show transition involving ingredients (actor and target) which are nearby first, sort these by distance
+		//- sort the far-away transitions by the object depth of the ingredients
 		
+		if (idA == ourLiveObject->holdingID || idA <= 0) {
+			rankScores[i] += 0;
+		} else if (boolCloseVect[idA]) {
+			GridPos pos = getClosestTile(currentPos, idA);
+			float dist = sqrt(pow(currentX - pos.x, 2) + pow(currentY - pos.y, 2));
+			rankScores[i] += dist;
+			
+		} else {
+			rankScores[i] += punishmentScore * (getObjectDepth(idA) + 1);
+	
+		}
+
+		if (idB == ourLiveObject->holdingID || idB <= 0) {
+			rankScores[i] += 0;
+	
+		} else if (boolCloseVect[idB]) {
+			GridPos pos = getClosestTile(currentPos, idB);
+			float dist = sqrt(pow(currentX - pos.x, 2) + pow(currentY - pos.y, 2));
+			rankScores[i] += dist;
+			
+		} else {
+			rankScores[i] += punishmentScore * (getObjectDepth(idB) + 1);
+	
+		}
+															 
+																																			 
+																		   
+		
+		//For craft-from-scratch transition, object depth of both ingredience would be shallower than the product object
+		int currDepth = getObjectDepth(currentHintObjId);
+		if (
+			(idA <= 0 || getObjectDepth(idA) < currDepth) &&
+			(idB <= 0 || getObjectDepth(idB) < currDepth)
+			) {
+			rankScores[i] = 0;
+		}
+
 	}
 	
 	vector<std::size_t> index(unsortedTrans.size());
 	iota(index.begin(), index.end(), 0);
-	sort(index.begin(), index.end(), [&](size_t a, size_t b) { return distScore[a] < distScore[b]; });
+	sort(index.begin(), index.end(), [&](size_t a, size_t b) { return rankScores[a] < rankScores[b]; });
 	
 	vector<TransRecord*> temp(unsortedTrans.size());
 	for ( int i=0; i<unsortedTrans.size(); i++ ) {
