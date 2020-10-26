@@ -460,116 +460,6 @@ vector<bool> minitech::getObjIsCloseVector() {
 	return objIsClose;
 }
 
-vector<TransRecord*> minitech::getUsesTrans(int objId) {
-	
-	SimpleVector<TransRecord*> *usesTrans = getAllUses( objId );
-	vector<TransRecord*> results;
-	
-	int numTrans = 0;
-	if( usesTrans != NULL ) {
-		numTrans = usesTrans->size();
-	}
-	if( numTrans == 0 ) {
-		return results; 
-	}
-
-	for( int t=0; t<numTrans; t++ ) {
-		
-		TransRecord *trans = usesTrans->getElementDirect( t );
-		
-		int idA = trans->actor;
-		int idB = trans->target;
-		int idC = trans->newActor;
-		int idD = trans->newTarget;
-		
-		int cOrD = -1;
-		if ( isProbabilitySet(idC) ) cOrD = 0;
-		if ( isProbabilitySet(idD) ) cOrD = 1;
-		if (cOrD != -1) {
-			CategoryRecord* c;
-			if (cOrD == 0) c = getCategory( idC );
-			if (cOrD == 1) c = getCategory( idD );
-			SimpleVector<int> idSet = c->objectIDSet;
-			for (int i=0; i<idSet.size(); i++) {
-				TransRecord* staticTrans = new TransRecord;
-				*staticTrans = *trans;
-				int newId = idSet.getElementDirect(i);
-				if (cOrD == 0) staticTrans->newActor = newId;
-				if (cOrD == 1) staticTrans->newTarget = newId;
-				results.push_back(staticTrans);
-			}
-			continue;
-		}
-		
-		if ( isUseDummyAndNotLastUse(idA) && isUseDummyAndNotLastUse(idC) ) continue;
-		if ( isUseDummyAndNotLastUse(idB) && isUseDummyAndNotLastUse(idD) ) continue;
-		if ( isCategory(idA) || isCategory(idB) || isCategory(idC) || isCategory(idD) ) continue;
-		if ( trans->lastUseActor || trans->lastUseTarget ) continue;
-		
-		results.push_back(trans);
-
-	}
-	
-	return results;
-}
-
-vector<TransRecord*> minitech::getProdTrans(int objId) {
-	
-	SimpleVector<TransRecord*> *prodTrans = getAllProduces( objId );
-	vector<TransRecord*> results;
-	
-	int numTrans = 0;
-	if( prodTrans != NULL ) {
-		numTrans = prodTrans->size();
-	}
-
-	for( int t=0; t<numTrans; t++ ) {
-		
-		TransRecord *trans = prodTrans->getElementDirect( t );
-		
-		int idA = trans->actor;
-		int idB = trans->target;
-		int idC = trans->newActor;
-		int idD = trans->newTarget;
-		
-		if ( idA == objId || idB == objId ) continue;
-		if ( isUseDummyAndNotLastUse(idA) && isUseDummyAndNotLastUse(idC) ) continue;
-		if ( isUseDummyAndNotLastUse(idB) && isUseDummyAndNotLastUse(idD) ) continue;
-		if ( isCategory(idA) || isCategory(idB) || isCategory(idC) || isCategory(idD) ) continue;
-		if ( trans->lastUseActor || trans->lastUseTarget ) continue;
-		
-		results.push_back(trans);
-
-	}
-	
-	int numCategoriesForObject = getNumCategoriesForObject( objId );
-	for (int i=0; i<numCategoriesForObject; i++) {
-		int cId = getCategoryForObject(objId, i);
-		CategoryRecord* c = getCategory( cId );
-		
-		if (c->isProbabilitySet) {
-			SimpleVector<TransRecord*> *prodPTrans = getAllProduces( cId );
-			int numPTrans = 0;
-			if( prodPTrans != NULL ) {
-				numPTrans = prodPTrans->size();
-			}
-			for( int t=0; t<numPTrans; t++ ) {
-				TransRecord* staticTrans = new TransRecord;
-				*staticTrans = *(prodPTrans->getElementDirect( t ));
-				
-				if (staticTrans->actor == cId) staticTrans->actor = objId;
-				if (staticTrans->target == cId) staticTrans->target = objId;
-				if (staticTrans->newActor == cId) staticTrans->newActor = objId;
-				if (staticTrans->newTarget == cId) staticTrans->newTarget = objId;
-				
-				results.push_back(staticTrans);
-			}
-		}
-	}
-	
-	return results;
-}
-
 unsigned int minitech::LevenshteinDistance(const std::string& s1, const std::string& s2) {
 	const std::size_t len1 = s1.size(), len2 = s2.size();
 	std::vector<std::vector<unsigned int>> d(len1 + 1, std::vector<unsigned int>(len2 + 1));
@@ -585,6 +475,7 @@ unsigned int minitech::LevenshteinDistance(const std::string& s1, const std::str
                       d[i][j] = std::min({ d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (s1[i - 1] == s2[j - 1] ? 0 : 1) });
 	return d[len1][len2];
 }
+
 
 
 void minitech::drawPoint(doublePair posCen, string color) {
@@ -727,6 +618,116 @@ void minitech::drawBox(doublePair posCen, float height, float width, float lineW
 }
 
 
+
+vector<TransRecord*> minitech::getUsesTrans(int objId) {
+	
+	SimpleVector<TransRecord*> *usesTrans = getAllUses( objId );
+	vector<TransRecord*> results;
+	
+	int numTrans = 0;
+	if( usesTrans != NULL ) {
+		numTrans = usesTrans->size();
+	}
+	if( numTrans == 0 ) {
+		return results; 
+	}
+
+	for( int t=0; t<numTrans; t++ ) {
+		
+		TransRecord *trans = usesTrans->getElementDirect( t );
+		
+		int idA = trans->actor;
+		int idB = trans->target;
+		int idC = trans->newActor;
+		int idD = trans->newTarget;
+		
+		int cOrD = -1;
+		if ( isProbabilitySet(idC) ) cOrD = 0;
+		if ( isProbabilitySet(idD) ) cOrD = 1;
+		if (cOrD != -1) {
+			CategoryRecord* c;
+			if (cOrD == 0) c = getCategory( idC );
+			if (cOrD == 1) c = getCategory( idD );
+			SimpleVector<int> idSet = c->objectIDSet;
+			for (int i=0; i<idSet.size(); i++) {
+				TransRecord* staticTrans = new TransRecord;
+				*staticTrans = *trans;
+				int newId = idSet.getElementDirect(i);
+				if (cOrD == 0) staticTrans->newActor = newId;
+				if (cOrD == 1) staticTrans->newTarget = newId;
+				results.push_back(staticTrans);
+			}
+			continue;
+		}
+		
+		if ( isUseDummyAndNotLastUse(idA) && isUseDummyAndNotLastUse(idC) ) continue;
+		if ( isUseDummyAndNotLastUse(idB) && isUseDummyAndNotLastUse(idD) ) continue;
+		if ( isCategory(idA) || isCategory(idB) || isCategory(idC) || isCategory(idD) ) continue;
+		if ( trans->lastUseActor || trans->lastUseTarget ) continue;
+		
+		results.push_back(trans);
+
+	}
+	
+	return results;
+}
+
+vector<TransRecord*> minitech::getProdTrans(int objId) {
+	
+	SimpleVector<TransRecord*> *prodTrans = getAllProduces( objId );
+	vector<TransRecord*> results;
+	
+	int numTrans = 0;
+	if( prodTrans != NULL ) {
+		numTrans = prodTrans->size();
+	}
+
+	for( int t=0; t<numTrans; t++ ) {
+		
+		TransRecord *trans = prodTrans->getElementDirect( t );
+		
+		int idA = trans->actor;
+		int idB = trans->target;
+		int idC = trans->newActor;
+		int idD = trans->newTarget;
+		
+		if ( idA == objId || idB == objId ) continue;
+		if ( isUseDummyAndNotLastUse(idA) && isUseDummyAndNotLastUse(idC) ) continue;
+		if ( isUseDummyAndNotLastUse(idB) && isUseDummyAndNotLastUse(idD) ) continue;
+		if ( isCategory(idA) || isCategory(idB) || isCategory(idC) || isCategory(idD) ) continue;
+		if ( trans->lastUseActor || trans->lastUseTarget ) continue;
+		
+		results.push_back(trans);
+
+	}
+	
+	int numCategoriesForObject = getNumCategoriesForObject( objId );
+	for (int i=0; i<numCategoriesForObject; i++) {
+		int cId = getCategoryForObject(objId, i);
+		CategoryRecord* c = getCategory( cId );
+		
+		if (c->isProbabilitySet) {
+			SimpleVector<TransRecord*> *prodPTrans = getAllProduces( cId );
+			int numPTrans = 0;
+			if( prodPTrans != NULL ) {
+				numPTrans = prodPTrans->size();
+			}
+			for( int t=0; t<numPTrans; t++ ) {
+				TransRecord* staticTrans = new TransRecord;
+				*staticTrans = *(prodPTrans->getElementDirect( t ));
+				
+				if (staticTrans->actor == cId) staticTrans->actor = objId;
+				if (staticTrans->target == cId) staticTrans->target = objId;
+				if (staticTrans->newActor == cId) staticTrans->newActor = objId;
+				if (staticTrans->newTarget == cId) staticTrans->newTarget = objId;
+				
+				results.push_back(staticTrans);
+			}
+		}
+	}
+	
+	return results;
+}
 
 vector<TransRecord*> minitech::sortUsesTrans(vector<TransRecord*> unsortedTrans) {
 	
@@ -903,15 +904,15 @@ void minitech::updateDrawTwoTech() {
 		drawRect( posCenter, recWidth/2, recHeight/2);
 		
 		drawStr("[+] CRAFTING GUIDE", posCenter, "tinyHandwritten", false);
-		mouseListener* maxAListener = getMouseListenerByArea(
+		mouseListener* maxListener = getMouseListenerByArea(
 			&twotechMouseListeners, sub(posLT, screenPos), sub(posBR, screenPos));
-		if (maxAListener->mouseHover) {
+		if (maxListener->mouseHover) {
 			setDrawColor( 1, 1, 1, 0.3 );
 			drawRect( posCenter, recWidth/2, recHeight/2);
 		}
-		if (maxAListener->mouseClick) {
+		if (maxListener->mouseClick) {
 			minitechMinimized = false;
-			maxAListener->mouseClick = false;
+			maxListener->mouseClick = false;
 		}
 		return;
 		
@@ -961,7 +962,7 @@ void minitech::updateDrawTwoTech() {
 			posLT.y - paddingY - contentOffsetY - iconSize/2
 			};
 		
-		int currHintObjId = 0;
+		int highlightObjId = 0;
 		vector<pair<mouseListener*,int>> iconListenerIds;
 		for (int i=0; i<numOfLines; i++) {
 			if (i>0) posLineLCen.y -= iconSize+lineSpacing;
@@ -1029,13 +1030,13 @@ void minitech::updateDrawTwoTech() {
 				int holdingID = ourLiveObject->holdingID;
 				holdingID = getDummyParent(holdingID);
 				if (trans->actor == trans->target) {
-					currHintObjId = trans->actor;
+					highlightObjId = trans->actor;
 				} else if (trans->actor > 0 && trans->actor != holdingID) {
-					currHintObjId = trans->actor;
+					highlightObjId = trans->actor;
 				} else if (trans->target > 0 && trans->target != holdingID) {
-					currHintObjId = trans->target;
+					highlightObjId = trans->target;
 				} else {
-					currHintObjId = 0;
+					highlightObjId = 0;
 				}
 			}
 			
@@ -1130,7 +1131,7 @@ void minitech::updateDrawTwoTech() {
 			if (trans->actor > 0 && trans->target > 0 && trans->newActor == 0) {
 				drawObj(pos, trans->newActor);
 			} else if (trans->actor == -1 && trans->autoDecaySeconds != 0 && trans->newActor == 0) {
-				if (trans->move !=0) {
+				if (trans->move != 0) {
 					drawStr("MOVING...", pos, "tinyHandwritten", false);
 				} else if (trans->newTarget == 0) {
 					drawStr("DESPAWNS", pos, "tinyHandwritten", false);
@@ -1194,9 +1195,9 @@ void minitech::updateDrawTwoTech() {
 			}
 		}
 		
-		if (currHintObjId > 0) {
+		if (highlightObjId > 0) {
 			GridPos currentPos = {currentX, currentY};
-			GridPos closestHintObjPos = getClosestTile(currentPos, currHintObjId);
+			GridPos closestHintObjPos = getClosestTile(currentPos, highlightObjId);
 			if ( !(closestHintObjPos.x == 9999 && closestHintObjPos.y == 9999) ) {
 				drawTileRect(closestHintObjPos.x, closestHintObjPos.y, "blue", true);
 			}
