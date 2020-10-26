@@ -61,6 +61,15 @@ vector<minitech::mouseListener*> minitech::twotechMouseListeners;
 minitech::mouseListener* minitech::prevListener;
 minitech::mouseListener* minitech::nextListener;
 
+const char *biomeNames[] = {"GRASSLANDS",
+							"SWAMP",
+							"YELLOW PRAIRIES",
+							"BADLANDS",
+							"TUNDRA",
+							"DESERT",
+							"JUNGLE",
+							"OCEAN"};
+
 
 
 void minitech::setLivingLifePage(
@@ -962,6 +971,44 @@ void minitech::updateDrawTwoTech() {
 			// printf("DEBUG: %d + %d = %d + %d\n", trans->actor, trans->target, trans->newActor, trans->newTarget);
 			// printf("DEBUG: %d\n", trans->autoDecaySeconds);
 			
+			if (trans == NULL) {
+				
+				ObjectRecord* currentHintObj = getObject(currentHintObjId);
+				if (currentHintObj->numBiomes > 0) {
+					
+					doublePair pos = posLineLCen;
+					pos.x += iconSize/2;
+					pos.x += iconSize;
+					
+					doublePair firstLine = pos;
+					firstLine.y += tinyLineHeight/2;
+					drawStr("NATURALLY", firstLine, "tinyHandwritten", false);
+					firstLine.y -= tinyLineHeight;
+					drawStr("SPAWN IN:", firstLine, "tinyHandwritten", false);
+
+					pos.x += iconSize;
+					pos.x += iconSize;
+					if (currentHintObj->numBiomes < 3) pos.x += iconSize;
+					
+					for (int b = 0; b < currentHintObj->numBiomes; b++) {
+						GroundSpriteSet *s = groundSprites[ currentHintObj->biomes[b] ];
+						setDrawColor( 1, 1, 1, 1 );
+						drawSprite( s->squareTiles[0][0], pos, 0.25 *guiScale );
+						
+						doublePair iconLT = {pos.x - iconSize/2, pos.y + iconSize/2};
+						doublePair iconBR = {pos.x + iconSize/2, pos.y - iconSize/2};		
+						mouseListener* biomeIconListener = getMouseListenerByArea(
+							&twotechMouseListeners, sub(iconLT, screenPos), sub(iconBR, screenPos));
+						pair<mouseListener*,int> biomeIconListenerId(biomeIconListener, 100000 + currentHintObj->biomes[b]);
+						iconListenerIds.push_back(biomeIconListenerId);
+						
+						pos.x += iconSize;
+					}
+				}
+				
+				continue;
+			}
+			
 
 			doublePair posLineTL = {
 				posLineLCen.x - paddingX,
@@ -1200,6 +1247,14 @@ void minitech::updateDrawTwoTech() {
 			doublePair iconCen = { iconLT.x + iconSize/2, iconLT.y - iconSize/2 };
 			if (listener->mouseHover && id > 0) {
 				doublePair captionPos = {iconCen.x, iconCen.y + iconCaptionYOffset};
+				
+				if (id >= 100000) {
+					int biomeId = id - 100000;
+					string biomeName(biomeNames[biomeId]);
+					drawStr(biomeName, captionPos, "tinyHandwritten", true, true);
+					continue;
+				}
+				
 				string objName(livingLifePage->minitechGetDisplayObjectDescription(id));
 				drawStr(objName, captionPos, "tinyHandwritten", true, true);
 				
@@ -1410,6 +1465,10 @@ void minitech::livingLifeDraw(float mX, float mY) {
 			currentHintTrans = sortUsesTrans(unsortedTrans);
 		} else if (useOrMake == 1) {
 			currentHintTrans = sortProdTrans(unsortedTrans);
+			
+			ObjectRecord* currentHintObj = getObject(currentHintObjId);
+			if (currentHintObj != NULL && currentHintObj->numBiomes > 0 && currentHintObj->mapChance > 0) 
+				currentHintTrans.insert(currentHintTrans.begin(), NULL);
 		}
 
 	}
