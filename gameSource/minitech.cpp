@@ -1132,6 +1132,8 @@ void minitech::updateDrawTwoTech() {
 			} else if (trans->actor == -1 && trans->autoDecaySeconds != 0 && trans->newActor == 0) {
 				if (trans->move !=0) {
 					drawStr("MOVING...", pos, "tinyHandwritten", false);
+				} else if (trans->newTarget == 0) {
+					drawStr("DESPAWNS", pos, "tinyHandwritten", false);
 				} else {
 					drawObj(pos, trans->newActor, "TURNING", "INTO...");
 				}
@@ -1172,7 +1174,11 @@ void minitech::updateDrawTwoTech() {
 				setDrawColor( 1, 1, 1, 0.3 );
 				drawRect(pos, iconSize/2, iconSize/2);
 			}
-			drawObj(pos, trans->newTarget, "EMPTY", "GROUND");
+			if (trans->actor == -1 && trans->autoDecaySeconds != 0 && trans->newTarget == 0) {
+				//Despawn transitions, "DESPAWNS" is written in the newActor slot, keep this slot empty
+			} else {
+				drawObj(pos, trans->newTarget, "EMPTY", "GROUND");
+			}
 			if (trans->targetChangeChance != 1.0) {
 				string secondLine = to_string( trans->targetChangeChance * 100 );
 				secondLine = secondLine.substr(0, secondLine.find(".") + 2) + "PCT";
