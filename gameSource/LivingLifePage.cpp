@@ -912,9 +912,9 @@ static double computeCurrentAge( LiveObject *inObj ) {
                 // baby cries for 5 seconds each time they speak
             
                 // update age using clock
-                return inObj->tempAgeOverride + 
+                return computeDisplayAge( inObj->tempAgeOverride +
                     inObj->ageRate * 
-                    ( curTime - inObj->tempAgeOverrideSetTime );
+                    ( curTime - inObj->tempAgeOverrideSetTime ) );
                 }
             else {
                 // temp override over
@@ -923,8 +923,8 @@ static double computeCurrentAge( LiveObject *inObj ) {
             }
         
         // update age using clock
-        return inObj->age + 
-            inObj->ageRate * ( game_getCurrentTime() - inObj->lastAgeSetTime );
+        return computeDisplayAge( inObj->age +
+            inObj->ageRate * ( game_getCurrentTime() - inObj->lastAgeSetTime ) );
         }
     
     }
