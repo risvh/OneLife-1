@@ -934,7 +934,7 @@ double LivingLifePage::hetuwGetAge( LiveObject *inObj ) {
 }
 
 void LivingLifePage::hetuwGetStringAge( char* str, LiveObject *inObj ) {
-	int age = (int)(computeCurrentAge(inObj)*10);
+	int age = (int)(computeServerAge( computeCurrentAge(inObj) )*10);
 	int ageDecimal = age - int(age*0.1)*10;
 	age = (int)((age-ageDecimal)*0.1);
 	sprintf(str, "%i.%i", age, ageDecimal);
