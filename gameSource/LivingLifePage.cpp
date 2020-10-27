@@ -930,7 +930,7 @@ static double computeCurrentAge( LiveObject *inObj ) {
     }
 
 double LivingLifePage::hetuwGetAge( LiveObject *inObj ) {
-	return computeCurrentAge( inObj );
+	return computeServerAge( computeCurrentAge( inObj ) );
 }
 
 void LivingLifePage::hetuwGetStringAge( char* str, LiveObject *inObj ) {
