@@ -3302,7 +3302,11 @@ void setDrawnObjectContained( char inContained ) {
     drawingContained = inContained;
     }
 
+double drawObjectScale = 1.0;
 
+void setDrawObjectScale(double inScale) {
+	drawObjectScale = inScale;
+}
 
 HoldingPos drawObject( ObjectRecord *inObject, int inDrawBehindSlots,
                        doublePair inPos,
@@ -3320,6 +3324,7 @@ HoldingPos drawObject( ObjectRecord *inObject, int inDrawBehindSlots,
         }
 
 	if (HetuwMod::objectDrawScale && inScale == 1.0) inScale = HetuwMod::objectDrawScale[inObject->id]; //minitech
+	if (!HetuwMod::objectDrawScale && inScale == 1.0) inScale = drawObjectScale;
 
     HoldingPos returnHoldingPos = { false, {0, 0}, 0 };
     

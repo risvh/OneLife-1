@@ -1,5 +1,6 @@
 #include "EditorScenePage.h"
-
+#include <math.h>
+#include <vector>
 
 #include "minorGems/game/Font.h"
 #include "minorGems/game/drawUtils.h"
@@ -10,7 +11,24 @@
 
 #include "minorGems/system/Time.h"
 
+#include "minorGems/graphics/openGL/ScreenGL.h"
 
+#include "hetuwmod.h"
+double *HetuwMod::objectDrawScale = NULL;
+
+double scale = 1.0;
+int xLimit = 7/scale/scale;
+int yLimit = 4/scale/scale;
+int cursorDim = 32*scale;
+int rectDim = 64*scale;
+
+int mapSizeX = 200;
+int mapSizeY = 200;
+int initCenterX = 100;
+int initCenterY = 100;
+
+int spriteCount;
+bool mapChanged = false;
 
 extern Font *mainFont;
 extern Font *smallFont;
@@ -46,8 +64,15 @@ static const AnimType personAnimTypes[ NUM_PERSON_ANIM ] =
 
 #define MAX_OFFSET 2 * CELL_D
 
-static doublePair cornerPos = { - 704, 360 };
+static doublePair cornerPos = { 0, 0 }; //{ - 704, 360 };
 
+void setScale(double inScale) {
+	scale = inScale;
+	xLimit = 7/scale*2;
+	yLimit = 4/scale*2;
+	cursorDim = 32*scale;
+	rectDim = 64*scale;
+}
 
 #define copyAreaSize 6
 
@@ -61,16 +86,28 @@ static SceneCell copyPeopleArea[ copyAreaSize ][ copyAreaSize ];
 EditorScenePage::EditorScenePage()
         : mPlayingTime( false ),
           mRecordingFrames( false ),
+		  mUndoButton( smallFont, -877, 350, "Undo" ),
+		  mRedoButton( smallFont, -817, 350, "Redo" ),
           mAnimEditorButton( mainFont, 210, 260, "Anim" ),
-          mSaveNewButton( smallFont, -300, 260, "Save New" ),
-          mReplaceButton( smallFont, -500, 260, "Replace" ),
-          mDeleteButton( smallFont, 500, 260, "Delete" ),
-          mSaveTestMapButton( smallFont, -300, 200, "Export Test Map" ),
-          mNextSceneButton( smallFont, -420, 260, ">" ),
-          mPrevSceneButton( smallFont, -580, 260, "<" ),
-          mClearSceneButton( smallFont, 350, 260, "Clear" ),
-          mGroundPicker( &groundPickable, -410, 90 ),
-          mObjectPicker( &objectPickable, 410, 90 ),
+          // mSaveNewButton( smallFont, -300, 260, "Save New" ),
+		  // mSaveNewButton( smallFont, -820, 360, "Save New" ),
+		  mSaveNewButton( smallFont, 820 + 30, 300, "Save New" ),
+          // mReplaceButton( smallFont, -500, 260, "Replace" ),
+		  mReplaceButton( smallFont, 820, 340, "Save" ),
+		  mConfirmReplaceButton( smallFont, 820, 340, "Confirm ?" ),
+          mDeleteButton( smallFont, 820, 220, "Delete file" ),
+		  mConfirmDeleteButton( smallFont, 820, 220, "Confirm ?" ),
+          // mSaveTestMapButton( smallFont, -300, 200, "Export Test Map" ),
+		  mSaveTestMapButton( smallFont, 820, 260, "Export Test Map" ),
+          // mNextSceneButton( smallFont, -420, 260, ">" ),
+          // mPrevSceneButton( smallFont, -580, 260, "<" ),
+          mNextSceneButton( smallFont, mReplaceButton.getPosition().x + 60, mReplaceButton.getPosition().y, ">" ),
+          mPrevSceneButton( smallFont, mReplaceButton.getPosition().x - 60, mReplaceButton.getPosition().y, "<" ),
+          mClearSceneButton( smallFont, 820 - 50, 300, "New" ),
+          // mGroundPicker( &groundPickable, -410, 90 ),
+          // mObjectPicker( &objectPickable, 410, 90 ),
+          mGroundPicker( &groundPickable, 820, 90 ),
+          mObjectPicker( &objectPickable, -820, 90 ),
           mPersonAgeSlider( smallFont, -55, -220, 2,
                             100, 20,
                             0, 100, "Age" ),
@@ -116,22 +153,31 @@ EditorScenePage::EditorScenePage()
           mShowUI( true ),
           mShowWhite( false ),
           mCursorFade( 1.0 ),
-          mSceneW( 400 ),
-          mSceneH( 90 ),
-          mShiftX( 0 ), 
-          mShiftY( 0 ),
-          mCurX( 6 ),
-          mCurY( 3 ),
-          mZeroX( 6 ),
-          mZeroY( 3 ),
+          mSceneW( mapSizeX ),
+          mSceneH( mapSizeY ),
+          mShiftX( -initCenterX ), 
+          mShiftY( initCenterY ),
+          mCurX( initCenterX ),
+          mCurY( initCenterY ),
+          mZeroX( initCenterX ),
+          mZeroY( initCenterY ),
           mFrameCount( 0 ),
           mLittleDheld( false ),
           mBigDheld( false ),
           mScenesFolder( NULL, "scenes" ),
           mNextFile( NULL ) {
+
+    addComponent( &mUndoButton );
+    mUndoButton.addActionListener( this );
+	mUndoButton.setVisible( false );
+	
+    addComponent( &mRedoButton );
+    mRedoButton.addActionListener( this );
+	mRedoButton.setVisible( false );
     
     addComponent( &mAnimEditorButton );
     mAnimEditorButton.addActionListener( this );
+	mAnimEditorButton.setVisible( false );
 
     addComponent( &mGroundPicker );
     mGroundPicker.addActionListener( this );
@@ -145,9 +191,15 @@ EditorScenePage::EditorScenePage()
 
     addComponent( &mReplaceButton );
     mReplaceButton.addActionListener( this );
+	
+    addComponent( &mConfirmReplaceButton );
+    mConfirmReplaceButton.addActionListener( this );
 
     addComponent( &mDeleteButton );
     mDeleteButton.addActionListener( this );
+
+    addComponent( &mConfirmDeleteButton );
+    mConfirmDeleteButton.addActionListener( this );	
 
     addComponent( &mSaveTestMapButton );
     mSaveTestMapButton.addActionListener( this );
@@ -162,9 +214,10 @@ EditorScenePage::EditorScenePage()
     addComponent( &mClearSceneButton );
     mClearSceneButton.addActionListener( this );
 
-
     mReplaceButton.setVisible( false );
+	mConfirmReplaceButton.setVisible( false );
     mDeleteButton.setVisible( false );
+	mConfirmDeleteButton.setVisible( false );
     
 
     addComponent( &mPersonAgeSlider );
@@ -253,6 +306,7 @@ EditorScenePage::EditorScenePage()
     
     resizeGrid( mSceneH, mSceneW );
     
+	spriteCount = round( std::max(mSceneH, mSceneW) / 200 * 25 );
 
     mSceneID = -1;
     
@@ -272,25 +326,22 @@ EditorScenePage::EditorScenePage()
     checkNextPrevVisible();
 
 
-    addKeyClassDescription( &mKeyLegend, "Arrows", "Change selected cell" );
-    addKeyClassDescription( &mKeyLegend, "Ctr/Shft", "Bigger cell jumps" );
-    addKeyClassDescription( &mKeyLegend, "f/F", "Flip obj/person" );
-    addKeyClassDescription( &mKeyLegend, "c/C/A", "Copy obj/person/area" );
-    addKeyClassDescription( &mKeyLegend, "x/X", "Cut obj/person" );
-    addKeyClassDescription( &mKeyLegend, "v/V", "Paste/Fill" );
-    addKeyClassDescription( &mKeyLegend, "i/I", "Insert contained/held" );
-    addKeyClassDescription( &mKeyLegend, "Bkspc", "Clear cell" );
-    addKeyClassDescription( &mKeyLegend, "Hold d/D", "Set obj/person dest" );
-    addKeyDescription( &mKeyLegend, 'o', "Set map origin" );
-    addKeyDescription( &mKeyLegend, 'p', "Play time" );
-    addKeyDescription( &mKeyLegend, 'r', "Record frames" );
-    addKeyDescription( &mKeyLegend, 'h', "Hide/show UI" );
+    addKeyClassDescription( &mKeyLegend, "Shft + WASD", "Move View" );
+	addKeyClassDescription( &mKeyLegend, "e + L - Click", "Jump View" );
+	addKeyClassDescription( &mKeyLegend, "L - Click", "Add selected" );
+	addKeyClassDescription( &mKeyLegend, "R - Click", "Clear cells" );
+	
+	addKeyDescription( &mKeyLegend, 'e', "Hide/show UI" );
+	addKeyClassDescription( &mKeyLegend, "z", "Undo" );
+	addKeyClassDescription( &mKeyLegend, "x", "Redo" );
+	addKeyClassDescription( &mKeyLegend, "c/C", "Copy cell/area" );
+    addKeyClassDescription( &mKeyLegend, "v/V", "Paste cell/area" );
+	addKeyClassDescription( &mKeyLegend, "q", "Clear only floor" );
 
-    addKeyClassDescription( &mKeyLegendG, "R-Click", "Flood fill" );
-
-    addKeyClassDescription( &mKeyLegendC, "R-Click", "Add to Container" );
-    addKeyClassDescription( &mKeyLegendP, "R-Click", "Add Clothing/Held" );
-    addKeyClassDescription( &mKeyLegendF, "R-Click", "Add Floor" );
+    addKeyClassDescription( &mKeyLegendG, "Shft + L - Click", "Flood fill" );
+    addKeyClassDescription( &mKeyLegendC, "Shft + L - Click", "Add to Container" );
+    // addKeyClassDescription( &mKeyLegendP, "R-Click", "Add Clothing/Held" );
+    // addKeyClassDescription( &mKeyLegendF, "R-Click", "Add Floor" );
     }
 
 
@@ -331,8 +382,8 @@ void EditorScenePage::floodFill( int inX, int inY,
     // also limit based on cur pos, so we don't fill entire huge canvas
     // (given sparse file format that skips blank cells)
     
-    if( inX < mCurX - 6 || inX > mCurX + 6 ||
-        inY < mCurY - 4 || inY > mCurY + 4 ) {
+    if( inX < cursorGridX - 10 || inX > cursorGridX + 10 ||
+        inY < cursorGridY - 10 || inY > cursorGridY + 10 ) {
         return;
         }
     
@@ -350,119 +401,32 @@ void EditorScenePage::floodFill( int inX, int inY,
         }
     }
 
-
-
 void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
+	
+	if (!mShowUI) return;
+	
     SceneCell *c = getCurrentCell();
     SceneCell *p = getCurrentPersonCell();
-    SceneCell *f = getCurrentFloorCell();
+    // SceneCell *f = getCurrentFloorCell();
     
     if( inTarget == &mAnimEditorButton ) {
         setSignal( "animEditor" );
         }
+	else if( inTarget == &mUndoButton ) {
+		undo();
+		}
+	else if( inTarget == &mRedoButton ) {
+		redo();
+		}
     else if( inTarget == &mGroundPicker ) {
-        
-        char wasRightClick = false;
-        
-        int biome = mGroundPicker.getSelectedObject( &wasRightClick );
-        
-        if( biome >= 0 ) {
-            
-            if( wasRightClick ) {
-                
-                floodFill( mCurX, mCurY,
-                           c->biome,
-                           biome );
-                }
-            else {
-                // single cell
-                mCells[ mCurY ][ mCurX ].biome = biome;
-                }
-            }
+		
+		mObjectPicker.unselectObject();
+
         }
     else if( inTarget == &mObjectPicker ) {
-        char wasRightClick = false;
-        
-        int id = mObjectPicker.getSelectedObject( &wasRightClick );
-       
-        if( id > 0 ) {
-            char placed = false;
-            ObjectRecord *o = getObject( id );
-            
-            if( wasRightClick && c->oID > 0 ) {
-                
-                
-                if( getObject( c->oID )->numSlots > c->contained.size() ) {
-                    c->contained.push_back( id );
-                    SimpleVector<int> sub;
-                    c->subContained.push_back( sub );
-                    placed = true;
-                    }
-                }
-            if( !placed && wasRightClick && p->oID <= 0 && o->floor ) {
-                // place floor
-                f->oID = id;
-                placed = true;
-                }
-            
-            if( !placed && wasRightClick && p->oID > 0 ) {
-                if( o->clothing != 'n' ) {
-                    
-                    switch( o->clothing ) {
-                        case 's': {
-                            if( p->clothing.backShoe == NULL ) {
-                                p->clothing.backShoe = o;
-                                }
-                            else if( p->clothing.frontShoe == NULL ) {
-                                p->clothing.frontShoe = o;
-                                }
-                            else {
-                                // both already present, replace back
-                                // empty front
-                                p->clothing.backShoe = o;
-                                p->clothing.frontShoe = NULL;
-                                }
-                            break;
-                            }
-                        case 'h':
-                            p->clothing.hat = o;
-                            break;
-                        case 't':
-                            p->clothing.tunic = o;
-                            break;
-                        case 'b':
-                            p->clothing.bottom = o;
-                            break;
-                        case 'p':
-                            p->clothing.backpack = o;
-                            break;
-                        }
-                    placed = true;
-                    }
-                else {
-                    // set held
-                    p->heldID = id;
-                    placed = true;
-                    }
-                }
-            
-            if( !placed ) {
-                if( getObject( id )->person ) {
-                    p->oID = id;
-                    if( p->age == -1 ) {
-                        p->age = 20;
-                        p->returnAge = p->age;
-                        }
-                    }
-                else {
-                    c->oID = id;
-                    c->contained.deleteAll();
-                    c->subContained.deleteAll();
-                    c->numUsesRemaining = o->numUses;                    
-                    }
-                }
-            }
-        checkVisible();
+		
+		mGroundPicker.unselectObject();
+		
         }
     else if( inTarget == &mSaveNewButton ) {
 
@@ -475,6 +439,7 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
         mDeleteButton.setVisible( true );
         mReplaceButton.setVisible( true );
         mNextSceneButton.setVisible( false );
+		mapChanged = false;
         checkNextPrevVisible();
         }
     else if( inTarget == &mSaveTestMapButton ) {
@@ -522,9 +487,21 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
             }
         }
     else if( inTarget == &mReplaceButton ) {
+		mReplaceButton.setVisible( false );
+		mConfirmReplaceButton.setVisible( true );
+        }
+    else if( inTarget == &mConfirmReplaceButton ) {
         writeSceneToFile( mSceneID );
+		mReplaceButton.setVisible( true );
+		mConfirmReplaceButton.setVisible( false );
+		mapChanged = false;
+		checkNextPrevVisible();
         }
     else if( inTarget == &mDeleteButton ) {
+		mDeleteButton.setVisible( false );
+		mConfirmDeleteButton.setVisible( true );
+		}
+	else if( inTarget == &mConfirmDeleteButton ) {	
         File *f = getSceneFile( mSceneID );
         
         f->remove();
@@ -533,7 +510,8 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
         
         mSceneID = -1;
         
-        mDeleteButton.setVisible( false );
+        mDeleteButton.setVisible( true );
+		mConfirmDeleteButton.setVisible( false );
         mReplaceButton.setVisible( false );
         checkNextPrevVisible();
         }
@@ -582,6 +560,7 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
         }
     else if( inTarget == &mClearSceneButton ) {
         clearScene();
+		mSceneID = -1;
         checkVisible();
         }
     else if( inTarget == &mPersonAgeSlider ) {
@@ -655,35 +634,36 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
 void EditorScenePage::drawGroundOverlaySprites() {
     doublePair overlayCornerPos = cornerPos;
     
-    while( overlayCornerPos.x < mCurX * CELL_D - 2048 - 704 ) {
-        overlayCornerPos.x += 2048;
+    while( overlayCornerPos.x < mCurX * CELL_D*scale - 2048*scale ) {
+        overlayCornerPos.x += 2048*scale;
         }
     
     
-    while( overlayCornerPos.y > 2048 - mCurY * CELL_D  + 360 ) {
-        overlayCornerPos.y -= 2048;
+    while( overlayCornerPos.y > 2048*scale - mCurY * CELL_D*scale ) {
+        overlayCornerPos.y -= 2048*scale;
         }
     
+    // overlayCornerPos.x += 512*scale - 1024*scale;
+    // overlayCornerPos.y -= 512*scale - 1024*scale;
 
+	overlayCornerPos.x += 1024*scale/2 - spriteCount*1024*scale/2;
+	overlayCornerPos.y -= 1024*scale/2 - spriteCount*1024*scale/2;
 
-    overlayCornerPos.x += 512 - 1024;
-    overlayCornerPos.y -= 512 - 1024;
-
-    for( int y=0; y<4; y++ ) {
-        for( int x=0; x<5; x++ ) {
+    for( int y=0; y<spriteCount; y++ ) {
+        for( int x=0; x<spriteCount; x++ ) {
             doublePair pos = overlayCornerPos;
-            pos.x += x * 1024;
-            pos.y -= y * 1024;
+            pos.x += x * 1024*scale;
+            pos.y -= y * 1024*scale;
             
             int tileY = y % 2;
             int tileX = x % 2;
             
             int tileI = tileY * 2 + tileX;
             
-            pos.x += mShiftX * CELL_D;
-            pos.y += mShiftY * CELL_D;
+            pos.x += mShiftX * CELL_D*scale;
+            pos.y += mShiftY * CELL_D*scale;
             
-            drawSprite( mGroundOverlaySprite[tileI], pos );
+            drawSprite( mGroundOverlaySprite[tileI], pos, scale );
             }
         }
     }
@@ -704,6 +684,155 @@ SceneCell *EditorScenePage::getCurrentFloorCell() {
     return &( mFloorCells[ mCurY ][ mCurX ] );
     }
 
+SceneCell *EditorScenePage::getCell(int absX, int absY) {
+    return &( mCells[ absY ][ absX ] );
+    }
+	
+SceneCell *EditorScenePage::getFloorCell(int absX, int absY) {
+    return &( mFloorCells[ absY ][ absX ] );
+    }
+	
+
+
+
+
+std::vector<SceneCell**> cellsQueue;
+std::vector<SceneCell**> floorCellsQueue;
+int queueIndex = 0;
+int queueCapacity = 8;
+int queueSize = 0;
+
+SceneCell ** EditorScenePage::copySceneCellArray( SceneCell **array ) {
+	SceneCell **arrayCopy = new SceneCell*[mSceneH];
+    for( int y=0; y<mSceneH; y++ ) {
+        arrayCopy[y] = new SceneCell[ mSceneW ];
+        // for( int x=0; x<mSceneW; x++ ) {
+            // arrayCopy[y][x] = mEmptyCell;
+		// }
+	}
+	for( int y=0; y<mSceneH; y++ ) {
+		for( int x=0; x<mSceneW; x++ ) {
+			arrayCopy[ y ][ x ] = array[ y ][ x ];
+		}
+	}
+	return arrayCopy;
+}
+
+void EditorScenePage::queuesPopBack() {
+	SceneCell **mCellsCopy = cellsQueue.back();
+	if( mCellsCopy != NULL ) {
+		for( int y=0; y<mSceneH; y++ ) {
+			delete [] mCellsCopy[y];
+		}
+		delete [] mCellsCopy;
+	}
+	cellsQueue.pop_back();
+	
+	SceneCell **mFloorCellsCopy = floorCellsQueue.back();
+	if( mFloorCellsCopy != NULL ) {
+		for( int y=0; y<mSceneH; y++ ) {
+			delete [] mFloorCellsCopy[y];
+		}
+		delete [] mFloorCellsCopy;
+	}
+	floorCellsQueue.pop_back();
+	
+	queueSize = static_cast<int>(cellsQueue.size());
+}
+
+void EditorScenePage::queuesPopFront() {
+	SceneCell **mCellsCopy = cellsQueue.front();
+	if( mCellsCopy != NULL ) {
+		for( int y=0; y<mSceneH; y++ ) {
+			delete [] mCellsCopy[y];
+		}
+		delete [] mCellsCopy;
+	}
+	cellsQueue.erase(cellsQueue.begin());
+	
+	SceneCell **mFloorCellsCopy = floorCellsQueue.front();
+	if( mFloorCellsCopy != NULL ) {
+		for( int y=0; y<mSceneH; y++ ) {
+			delete [] mFloorCellsCopy[y];
+		}
+		delete [] mFloorCellsCopy;
+	}
+	floorCellsQueue.erase(floorCellsQueue.begin());
+	
+	queueSize = static_cast<int>(cellsQueue.size());
+}
+
+void EditorScenePage::applySceneCellArrays( SceneCell **cells, SceneCell **floorCells ) {
+	for( int y=0; y<mSceneH; y++ ) {
+		for( int x=0; x<mSceneW; x++ ) {
+			mCells[ y ][ x ] = cells[ y ][ x ];
+			mFloorCells[ y ][ x ] = floorCells[ y ][ x ];
+		}
+	}
+}
+
+bool onRedo = false;
+
+void EditorScenePage::backup() {
+	
+	mapChanged = true;
+	
+	onRedo = false;
+	
+	while (queueIndex < queueSize) {
+		queuesPopBack();
+	}
+	
+	SceneCell **mCellsCopy = copySceneCellArray( mCells );
+	SceneCell **mFloorCellsCopy = copySceneCellArray( mFloorCells );
+	cellsQueue.push_back( mCellsCopy );
+	floorCellsQueue.push_back( mFloorCellsCopy );
+	queueSize = static_cast<int>(cellsQueue.size());
+	
+	if (queueSize > queueCapacity) {
+		queuesPopFront();
+	}
+	
+	queueIndex = queueSize;
+	checkVisible();
+	
+}
+
+void EditorScenePage::undo() {
+	
+	if (queueSize == 0 || queueIndex == 0) return;
+	
+	if (queueIndex == queueSize && !onRedo) {
+		backup();
+		queueIndex--;
+	}
+	
+	queueIndex--;
+	SceneCell **mCellsCopy = cellsQueue[queueIndex];
+	SceneCell **mFloorCellsCopy = floorCellsQueue[queueIndex];
+	applySceneCellArrays( mCellsCopy, mFloorCellsCopy );
+	
+	checkVisible();
+
+}
+
+void EditorScenePage::redo() {
+	
+	if (queueIndex >= queueSize - 1) return;
+	
+	onRedo = true;
+	
+	queueIndex++;
+	SceneCell **mCellsCopy = cellsQueue[queueIndex];
+	SceneCell **mFloorCellsCopy = floorCellsQueue[queueIndex];
+	applySceneCellArrays( mCellsCopy, mFloorCellsCopy );
+	
+	checkVisible();
+	
+}
+
+
+
 
 
 void EditorScenePage::checkVisible() {
@@ -723,36 +852,41 @@ void EditorScenePage::checkVisible() {
         curFocusX += p->destCellXOffset;
         curFocusY += p->destCellYOffset;
         }
+	
+	mShiftX = 0-curFocusX;
+	mShiftY = curFocusY-0;
+	
+    // if( curFocusX >= 4 && curFocusX <= 7 ) {
+        // mShiftX = 0;
+        // }
+    // else {
+        // if( curFocusX < 4 ) {
+            // mShiftX = 4 - curFocusX;
+            // }
+        // else {
+            // mShiftX = 7 - curFocusX;
+            // }
+        // }
     
-
-    if( curFocusX >= 4 && curFocusX <= 7 ) {
-        mShiftX = 0;
-        }
-    else {
-        if( curFocusX < 4 ) {
-            mShiftX = 4 - curFocusX;
-            }
-        else {
-            mShiftX = 7 - curFocusX;
-            }
-        }
-    
-    if( curFocusY >= 2 && curFocusY <= 4 ) {
-        mShiftY = 0;
-        }
-    else {
-        if( curFocusY < 2 ) {
-            mShiftY = curFocusY - 2;
-            }
-        else {
-            mShiftY = curFocusY - 4;
-            }
-        }
+    // if( curFocusY >= 2 && curFocusY <= 4 ) {
+        // mShiftY = 0;
+        // }
+    // else {
+        // if( curFocusY < 2 ) {
+            // mShiftY = curFocusY - 2;
+            // }
+        // else {
+            // mShiftY = curFocusY - 4;
+            // }
+        // }
 
     // make all visible, then turn some off selectively
     // below
-        
-    mAnimEditorButton.setVisible( true );
+    
+	mUndoButton.setVisible( true );
+	mRedoButton.setVisible( true );
+		
+    mAnimEditorButton.setVisible( false );
     mSaveNewButton.setVisible( true );
     mClearSceneButton.setVisible( true );
         
@@ -760,7 +894,9 @@ void EditorScenePage::checkVisible() {
 
 
     mReplaceButton.setVisible( mSceneID != -1 );
+	mConfirmReplaceButton.setVisible( false );
     mDeleteButton.setVisible( mSceneID != -1 );
+	mConfirmDeleteButton.setVisible( false );
         
     checkNextPrevVisible();
         
@@ -795,12 +931,11 @@ void EditorScenePage::checkVisible() {
     mPersonMoveDelayField.setVisible( p->destCellXOffset != 0 ||
                                       p->destCellYOffset != 0 );
     
-                                    
-
-
+	if (queueSize == 0 || queueIndex == 0) mUndoButton.setVisible( false );
+	if (queueIndex >= queueSize - 1) mRedoButton.setVisible( false );
 
     if( c->oID > 0 ) {
-        mCellAnimRadioButtons.setVisible( true );
+        mCellAnimRadioButtons.setVisible( false );
         
         for( int a=0; a<NUM_CELL_ANIM; a++ ) {
             if( cellAnimTypes[a] == c->anim ) {
@@ -808,13 +943,13 @@ void EditorScenePage::checkVisible() {
                 break;
                 }
             }
-        mCellAnimFreezeSlider.setVisible( true );
+        mCellAnimFreezeSlider.setVisible( false );
         mCellAnimFreezeSlider.setValue( c->frozenAnimTime );
 
         ObjectRecord *cellO = getObject( c->oID );
         
         if( cellO->numUses > 1 ) {
-            mCellSpriteVanishSlider.setVisible( true );
+            mCellSpriteVanishSlider.setVisible( false );
             
             mCellSpriteVanishSlider.setHighValue( cellO->numUses );
             mCellSpriteVanishSlider.setValue( c->numUsesRemaining );
@@ -823,8 +958,8 @@ void EditorScenePage::checkVisible() {
             mCellSpriteVanishSlider.setVisible( false );
             }
 
-        mCellXOffsetSlider.setVisible( true );
-        mCellYOffsetSlider.setVisible( true );
+        mCellXOffsetSlider.setVisible( false );
+        mCellYOffsetSlider.setVisible( false );
         
         mCellXOffsetSlider.setValue( c->xOffset );
         mCellYOffsetSlider.setValue( c->yOffset );
@@ -945,8 +1080,8 @@ static void stepMovingCell( SceneCell *inC ) {
         c->frameCount = 0;
         }
 
-    c->moveOffset.x = c->destCellXOffset * c->moveFractionDone * CELL_D;
-    c->moveOffset.y = -c->destCellYOffset * c->moveFractionDone * CELL_D;
+    c->moveOffset.x = c->destCellXOffset * c->moveFractionDone * CELL_D*scale;
+    c->moveOffset.y = -c->destCellYOffset * c->moveFractionDone * CELL_D*scale;
     }
 
 
@@ -1011,7 +1146,6 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     
     mFrameCount ++;
 
-
     // step any moving cells
     for( int y=0; y<mSceneH; y++ ) {
         for( int x=0; x<mSceneW; x++ ) {
@@ -1029,23 +1163,23 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
         for( int x=0; x<mSceneW; x++ ) {
             doublePair pos = cornerPos;
                 
-            pos.x += x * CELL_D;
-            pos.y -= y * CELL_D;
+            pos.x += x * CELL_D*scale;
+            pos.y -= y * CELL_D*scale;
 
-            if( y > mCurY + 4 || 
-                y < mCurY -4 ||
-                x > mCurX + 7 || 
-                x < mCurX -7 ) {
+            if( y > mCurY + yLimit || 
+                y < mCurY -yLimit ||
+                x > mCurX + xLimit || 
+                x < mCurX -xLimit ) {
                 
                 continue;
                 }
             
 
-            pos.x += mShiftX * CELL_D;
-            pos.y += mShiftY * CELL_D;
+            pos.x += mShiftX * CELL_D*scale;
+            pos.y += mShiftY * CELL_D*scale;
 
-            pos.x += 32;
-            pos.y -= 32;
+            pos.x += 32*scale;
+            pos.y -= 32*scale;
             
             SceneCell *c = &( mCells[y][x] );
             
@@ -1060,7 +1194,7 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
                     int tileY = y % s->numTilesWide;
                     
                     setDrawColor( 1, 1, 1, 1 );
-                    drawSprite( s->tiles[tileY][tileX], pos );
+                    drawSprite( s->tiles[tileY][tileX], pos, scale );
                     }
                 }
 
@@ -1071,27 +1205,27 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     double frameTime = frameRateFactor * mFrameCount / 60.0;
 
 
-    double hugR = CELL_D * 0.6;
+    double hugR = CELL_D*scale * 0.6;
 
     // floors on top of ground
     for( int y=0; y<mSceneH; y++ ) {
         for( int x=0; x<mSceneW; x++ ) {
             doublePair pos = cornerPos;
                 
-            pos.x += x * CELL_D;
-            pos.y -= y * CELL_D;
+            pos.x += x * CELL_D*scale;
+            pos.y -= y * CELL_D*scale;
 
-            if( y > mCurY + 4 || 
-                y < mCurY -4 ||
-                x > mCurX + 7 || 
-                x < mCurX -6 ) {
+            if( y > mCurY + yLimit || 
+                y < mCurY -yLimit ||
+                x > mCurX + xLimit || 
+                x < mCurX -xLimit ) {
                 
                 continue;
                 }
             
 
-            pos.x += mShiftX * CELL_D;
-            pos.y += mShiftY * CELL_D;
+            pos.x += mShiftX * CELL_D*scale;
+            pos.y += mShiftY * CELL_D*scale;
 
 
             SceneCell *f = &( mFloorCells[y][x] );
@@ -1203,7 +1337,7 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
             if( passIDs[1] != passIDs[2] ) {
                 setDrawColor( 1, 1, 1, 1 );
                 pos.y += 10;
-                drawSprite( mFloorSplitSprite, pos );
+                drawSprite( mFloorSplitSprite, pos, scale );
                 }
             }
         }
@@ -1247,8 +1381,8 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
 
     for( int y=0; y<mSceneH; y++ ) {
         
-        if( y > mCurY + 6 || 
-            y < mCurY -4 ) {
+        if( y > mCurY + yLimit || 
+            y < mCurY -yLimit ) {
                 
             continue;
             }
@@ -1267,8 +1401,8 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
 
                 for( int x=0; x<mSceneW; x++ ) {
                     
-                    if( x > mCurX + 7 || 
-                        x < mCurX -7 ) {
+                    if( x > mCurX + xLimit || 
+                        x < mCurX -xLimit ) {
                         
                         continue;
                         }
@@ -1276,11 +1410,11 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
 
                     doublePair pos = cornerPos;
                 
-                    pos.x += x * CELL_D;
-                    pos.y -= y * CELL_D;
+                    pos.x += x * CELL_D*scale;
+                    pos.y -= y * CELL_D*scale;
 
-                    pos.x += mShiftX * CELL_D;
-                    pos.y += mShiftY * CELL_D;
+                    pos.x += mShiftX * CELL_D*scale;
+                    pos.y += mShiftY * CELL_D*scale;
 
                     SceneCell *p = &( mPersonCells[y][x] );
 
@@ -1556,19 +1690,19 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
             
             // now objects in row
             for( int x=0; x<mSceneW; x++ ) {
-                if( x > mCurX + 7 || 
-                    x < mCurX -7 ) {
+                if( x > mCurX + xLimit || 
+                    x < mCurX -xLimit ) {
                     
                     continue;
                     }
 
                 doublePair pos = cornerPos;
                 
-                pos.x += x * CELL_D;
-                pos.y -= y * CELL_D;
+                pos.x += x * CELL_D*scale;
+                pos.y -= y * CELL_D*scale;
                 
-                pos.x += mShiftX * CELL_D;
-                pos.y += mShiftY * CELL_D;
+                pos.x += mShiftX * CELL_D*scale;
+                pos.y += mShiftY * CELL_D*scale;
 
                 SceneCell *c = &( mCells[y][x] );
                 
@@ -1652,27 +1786,37 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
                         skippingSome = true;
                         }
 
-                    drawObjectAnim( c->oID, c->anim, 
-                                    thisFrameTime, 
-                                    0,
-                                    c->anim,
-                                    thisFrameTime,
-                                    frozenRotFrameTime,
-                                    &used,
-                                    ground,
-                                    ground,
-                                    cellPos,
-                                    0,
-                                    false,
-                                    c->flipH,
-                                    -1,
-                                    0,
-                                    false,
-                                    false,
-                                    c->clothing,
-                                    NULL,
-                                    c->contained.size(), contained,
-                                    subContained );
+                    setDrawObjectScale(scale);
+					drawObject( getObject(c->oID), cellPos, 0, 
+								false, c->flipH, -1,
+								0,
+								false,
+								false,
+								c->clothing,
+								c->contained.size(), contained,
+								subContained
+								);
+					// drawObjectAnim( c->oID, c->anim, 
+                                    // thisFrameTime, 
+                                    // 0,
+                                    // c->anim,
+                                    // thisFrameTime,
+                                    // frozenRotFrameTime,
+                                    // &used,
+                                    // ground,
+                                    // ground,
+                                    // cellPos,
+                                    // 0,
+                                    // false,
+                                    // c->flipH,
+                                    // -1,
+                                    // 0,
+                                    // false,
+                                    // false,
+                                    // c->clothing,
+                                    // NULL,
+                                    // c->contained.size(), contained,
+                                    // subContained );
                     delete [] contained;
                     delete [] subContained;
 
@@ -1694,11 +1838,11 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     
     doublePair curPos = cornerPos;
                 
-    curPos.x += mCurX * CELL_D;
-    curPos.y -= mCurY * CELL_D;
+    curPos.x += mCurX * CELL_D*scale;
+    curPos.y -= mCurY * CELL_D*scale;
 
-    curPos.x += mShiftX * CELL_D;
-    curPos.y += mShiftY * CELL_D;
+    curPos.x += mShiftX * CELL_D*scale;
+    curPos.y += mShiftY * CELL_D*scale;
     
 
     if( mShowUI ) {
@@ -1722,30 +1866,62 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     
     setDrawColor( 1, 1, 1, 1 );
     
-    drawSquare( curPos, 62 );
+    drawSquare( curPos, rectDim ); //62
 
     startDrawingThroughStencil( true );
     
     setDrawColor( 1, 1, 1, 0.75 * mCursorFade );
-    drawSquare( curPos, 64 );
+    drawSquare( curPos, rectDim+1 ); //64
 
     stopStencil();
+		
+		
+	char wasRightClick = false;
+	int id = mObjectPicker.getSelectedObject( &wasRightClick );
+	doublePair cursorInfoPos = {cursorX + 35.0, cursorY - 25.0};
+	char *cursorInfo; //mSceneID != -1 && 
+	if ( cursorGridX >= 0 && cursorGridY >= 0 && cursorGridX < mSceneW && cursorGridY < mSceneH ) {
+		int oid = getCell(cursorGridX, cursorGridY)->oID;
+		int x = cursorGridX - mZeroX;
+		int y = mZeroY - cursorGridY;
+		
+		if (id > 0 && oid > 0) {
+			cursorInfo = autoSprintf( "%d, %d, %d, picked: %d", x, y, oid, id );
+		} else if (oid > 0) {
+			cursorInfo = autoSprintf( "%d, %d, %d", x, y, oid );
+		} else if (id > 0) {
+			cursorInfo = autoSprintf( "%d, %d, picked: %d", x, y, id );
+		} else {
+			cursorInfo = autoSprintf( "%d, %d", x, y );
+		}
+		
+		double w = smallFont->measureString( cursorInfo );
+		double h = smallFont->getFontHeight();
+		int padding = 4;
+		w += 2 * padding;
+		h += 2 * padding;
+		
+		setDrawColor( 0, 0, 0, 0.5 );
+		doublePair rectPos = { cursorInfoPos.x + w/2 - padding, cursorInfoPos.y };
+		drawRect( rectPos, w / 2, h / 2 );
+		setDrawColor( 1, 1, 1, 1 );
+		smallFont->drawString( cursorInfo, cursorInfoPos, alignLeft );		
 
+	}
 
     if( !mShowUI ) {
         return;
         }
 
 
-
     // draw + at origin
     doublePair zeroPos = cornerPos;
                 
-    zeroPos.x += mZeroX * CELL_D;
-    zeroPos.y -= mZeroY * CELL_D;
+    zeroPos.x += mZeroX * CELL_D*scale;
+    zeroPos.y -= mZeroY * CELL_D*scale;
 
-    zeroPos.x += mShiftX * CELL_D;
-    zeroPos.y += mShiftY * CELL_D;
+    zeroPos.x += mShiftX * CELL_D*scale;
+    zeroPos.y += mShiftY * CELL_D*scale;
     
 
     startAddingToStencil( false, true );
@@ -1754,29 +1930,29 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     
     
     doublePair cornerPos = zeroPos;
-    cornerPos.x -= 33;
-    cornerPos.y -= 33;
-    drawSquare( cornerPos, 32 );
+    cornerPos.x -= cursorDim+1;
+    cornerPos.y -= cursorDim+1;
+    drawSquare( cornerPos, cursorDim );
 
     cornerPos = zeroPos;
-    cornerPos.x += 33;
-    cornerPos.y -= 33;
-    drawSquare( cornerPos, 32 );
+    cornerPos.x += cursorDim+1;
+    cornerPos.y -= cursorDim+1;
+    drawSquare( cornerPos, cursorDim );
 
     cornerPos = zeroPos;
-    cornerPos.x -= 33;
-    cornerPos.y += 33;
-    drawSquare( cornerPos, 32 );
+    cornerPos.x -= cursorDim+1;
+    cornerPos.y += cursorDim+1;
+    drawSquare( cornerPos, cursorDim );
 
     cornerPos = zeroPos;
-    cornerPos.x += 33;
-    cornerPos.y += 33;
-    drawSquare( cornerPos, 32 );
+    cornerPos.x += cursorDim+1;
+    cornerPos.y += cursorDim+1;
+    drawSquare( cornerPos, cursorDim );
 
     startDrawingThroughStencil( true );
     
     setDrawColor( 1, 0, 0, 0.75 );
-    drawSquare( zeroPos, 64 );
+    drawSquare( zeroPos, cursorDim*2 );
 
     stopStencil();
 
@@ -1790,8 +1966,8 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     if( mLittleDheld || c->destCellXOffset != 0 || c->destCellYOffset != 0 ) {
         doublePair markPos = curPos;
         
-        markPos.x += c->destCellXOffset * CELL_D;
-        markPos.y -= c->destCellYOffset * CELL_D;
+        markPos.x += c->destCellXOffset * CELL_D*scale;
+        markPos.y -= c->destCellYOffset * CELL_D*scale;
         
         drawSprite( mCellDestSprite, markPos );
         }
@@ -1799,18 +1975,21 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     if( mBigDheld || p->destCellXOffset != 0 || p->destCellYOffset != 0 ) {
         doublePair markPos = curPos;
         
-        markPos.x += p->destCellXOffset * CELL_D;
-        markPos.y -= p->destCellYOffset * CELL_D;
+        markPos.x += p->destCellXOffset * CELL_D*scale;
+        markPos.y -= p->destCellYOffset * CELL_D*scale;
         
         drawSprite( mPersonDestSprite, markPos );
         }
     
     
 
-    doublePair legendPos = mAnimEditorButton.getPosition();
-            
-    legendPos.x = -150;
-    legendPos.y += 20;
+    // doublePair legendPos = mAnimEditorButton.getPosition();
+    // legendPos.x = -150;
+    // legendPos.y += 20;
+	
+	doublePair legendPos = mGroundPicker.getPosition();
+	legendPos.y -= 350;
+	legendPos.x -= 80;
             
     drawKeyLegend( &mKeyLegend, legendPos );
 
@@ -1860,9 +2039,9 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     
     
 
-    doublePair posStringPos = mSaveNewButton.getPosition();
+    doublePair posStringPos = {-820, 400}; //mSaveNewButton.getPosition();
     
-    posStringPos.y += 40;
+    posStringPos.x -= 40;
     
 
     setDrawColor( 0, 0, 0, 0.5 );
@@ -1878,7 +2057,10 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     delete [] posStringY;
 
     if( c->oID > 0 ) {
-        doublePair pos = { -400, -290 };
+        // doublePair pos = { -400, -290 };
+		doublePair pos = posStringPos;
+		pos.y -= 25;
+		pos.x -= 40;
         
         char *s = autoSprintf( "oID=%d  %s", c->oID,
                                getObject( c->oID )->description );
@@ -1958,18 +2140,31 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
         
         }
     
-    if( mReplaceButton.isVisible() ) {
+    // if( mReplaceButton.isVisible() ) {
         
         doublePair pos = mReplaceButton.getPosition();
         
         pos.y += 32;
-        pos.x -= 40;
-        
-        char *s = autoSprintf( "Scene %d", mSceneID );
-        
-        drawOutlineString( s, pos, alignLeft );
-        delete [] s;
-        }
+        // pos.x -= 40;
+		
+		if (mSceneID == -1) {
+			char *s = autoSprintf( "Unsaved Scene*" );
+			drawOutlineString( s, pos, alignCenter );
+			delete [] s;
+		} else {
+			if (mapChanged) {
+				char *s = autoSprintf( "Scene %d*", mSceneID );
+				drawOutlineString( s, pos, alignCenter );
+				delete [] s;
+			} else {
+				char *s = autoSprintf( "Scene %d", mSceneID );
+				drawOutlineString( s, pos, alignCenter );
+				delete [] s;
+			}
+		}
+		
+		
+        // }
     
 
     }
@@ -2002,9 +2197,22 @@ void EditorScenePage::makeActive( char inFresh ) {
     }
 
 
-
 void EditorScenePage::step() {
-
+	
+	HetuwMouseActionBuffer* mouseBuffer = hetuwGetMouseActionBuffer();
+	for (int i = 0; i < mouseBuffer->bufferPos; i++) {
+		switch (mouseBuffer->buffer[i]) {
+			case MouseButton::WHEELUP:
+				setScale(scale*1.15);
+				// checkVisible();
+				break;
+			case MouseButton::WHEELDOWN:
+				setScale(scale*0.87);
+				// checkVisible();
+				break;
+		}
+	}
+	mouseBuffer->Reset();
 
     if( mPlayingTime ) {
         
@@ -2047,9 +2255,12 @@ void EditorScenePage::step() {
         }
     }
 
-
+bool shiftDown = false;
 
 void EditorScenePage::keyDown( unsigned char inASCII ) {
+	
+	if (isShiftKeyDown()) shiftDown = true;
+	
     char skipCheckVisible = false;
     
     if( inASCII == 13 ) {
@@ -2057,10 +2268,23 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
         // return to cursor control
         TextField::unfocusAll();
         }
-    
 
     if( TextField::isAnyFocused() ) {
         return;
+        }
+		
+    if( inASCII == 32 ) {
+        // spacebar
+        mGroundPicker.unselectObject();
+		mObjectPicker.unselectObject();
+        }
+		
+    if( tolower(inASCII) == 'z' ) {
+        if (mShowUI) undo();
+        }
+		
+    if( tolower(inASCII) == 'x' ) {
+        if (mShowUI) redo();
         }
     
     if( inASCII == '=' ) {
@@ -2068,16 +2292,120 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
         // don't checkVisible, because it makes cur cell border appear
         return;
         }
-    
 
     SceneCell *c = getCurrentCell();
     SceneCell *p = getCurrentPersonCell();
     SceneCell *f = getCurrentFloorCell();
-    
-    if( inASCII == 'h' ) {
+	
+	int offset = 1;
+	
+	if( isShiftKeyDown() ) {
+		offset = 4;
+	}
+	if( isCommandKeyDown() && isShiftKeyDown() ) {
+		offset = 8;
+	}
+	
+	switch( tolower(inASCII) ) {
+		case 'a':
+			mCurX -= offset;
+			if( mCurX < 0 ) {
+				mCurX = 0;
+			}
+			break;
+		case 'd':
+			mCurX += offset;
+			if( mCurX >= mSceneW ) {
+				mCurX = mSceneW - 1;
+			}
+			break;
+		case 's':
+			mCurY += offset;
+			if( mCurY >= mSceneH ) {
+				mCurY = mSceneH - 1;
+			}
+			break;
+		case 'w':
+			mCurY -= offset;
+			if( mCurY < 0 ) {
+				mCurY = 0;
+			}
+			break;
+	}
+	
+    if ( tolower(inASCII) == 'e' ) {
         mShowUI = ! mShowUI;
         skipDrawingSubComponents( ! mShowUI );
-        }
+    }
+	if ( tolower(inASCII) == 'c' ) {
+		if ( !isShiftKeyDown() ) {
+			// copy
+			mCopyBuffer = *c;
+			copyAreaSet = false;
+		} else {
+			if ( mCurY + copyAreaSize <= mSceneH && mCurX + copyAreaSize <= mSceneW ) {
+				for( int y=mCurY; y< mCurY + copyAreaSize; y++ ) {
+					for( int x=mCurX; x< mCurX + copyAreaSize; x++ ) {
+						
+						copyArea[ y - mCurY ][ x - mCurX ] = mCells[ y ][ x ];
+						copyFloorArea[ y - mCurY ][ x - mCurX ] = mFloorCells[ y ][ x ];
+						copyPeopleArea[ y - mCurY ][ x - mCurX ] = mPersonCells[ y ][ x ];
+					}
+				}
+				copyAreaSet = true;
+			}
+		}
+	}
+	if( tolower(inASCII) == 'v' ) {
+        // paste
+        if( copyAreaSet && isShiftKeyDown() ) {
+			if ( mCurY + copyAreaSize <= mSceneH && mCurX + copyAreaSize <= mSceneW ) {
+				backup();
+				for( int y=mCurY; y< mCurY + copyAreaSize; y++ ) {
+					for( int x=mCurX; x< mCurX + copyAreaSize; x++ ) {
+					
+						copyArea[ y - mCurY ][ x - mCurX ].biome = mCells[ y ][ x ].biome;
+					
+						mCells[ y ][ x ] = copyArea[ y - mCurY ][ x - mCurX ];
+						mFloorCells[ y ][ x ] = copyFloorArea[ y - mCurY ][ x - mCurX ];
+						mPersonCells[ y ][ x ] = copyPeopleArea[ y - mCurY ][ x - mCurX ];
+					}
+				}
+			}
+		} 
+		if ( !isShiftKeyDown() ) {
+			if( mCopyBuffer.oID > 0 &&
+				getObject( mCopyBuffer.oID )->person ) {
+				backup();
+				*p = mCopyBuffer;
+			} else {
+				backup();
+				mCopyBuffer.biome = c->biome;
+				*c = mCopyBuffer;
+			}
+		}
+        restartAllMoves();
+	}
+    if ( tolower(inASCII) == 'q' ) {
+		backup();
+        // clearCell( c );
+        // clearCell( p );
+        clearCell( f );
+    }
+    if( tolower(inASCII) == 'o' ) {
+        mZeroX = mCurX;
+        mZeroY = mCurY;
+    }
+		
+	checkVisible();
+		
+	return;
+	
+    
+    // if( inASCII == 'h' ) {
+        // mShowUI = ! mShowUI;
+        // skipDrawingSubComponents( ! mShowUI );
+        // }
     if( inASCII == 'w' ) {
         mShowWhite = ! mShowWhite;
         }
@@ -2169,6 +2497,8 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
             for( int y=mCurY; y< mCurY + copyAreaSize; y++ ) {
                 for( int x=mCurX; x< mCurX + copyAreaSize; x++ ) {
                 
+					copyArea[ y - mCurY ][ x - mCurX ].biome = mCells[ y ][ x ].biome;
+				
                     mCells[ y ][ x ] = 
                         copyArea[ y - mCurY ][ x - mCurX ];
                     mFloorCells[ y ][ x ] = 
@@ -2269,6 +2599,9 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
 
 
 void EditorScenePage::keyUp( unsigned char inASCII ) {
+	
+	// shiftDown = isShiftKeyDown();
+	
     if( TextField::isAnyFocused() ) {
         return;
         }
@@ -2340,13 +2673,236 @@ void EditorScenePage::clearScene() {
             mFloorCells[y][x] = mEmptyCell;
             }
         }
+	mapChanged = false;
+    }
+	
+bool EditorScenePage::hoverAnyUI( float inX, float inY ) {
+	if (mUndoButton.isMouseOver()) return true;
+	if (mRedoButton.isMouseOver()) return true;
+	if (mSaveNewButton.isMouseOver()) return true;
+	if (mReplaceButton.isMouseOver()) return true;
+	if (mConfirmReplaceButton.isMouseOver()) return true;
+	if (mDeleteButton.isMouseOver()) return true;
+	if (mConfirmDeleteButton.isMouseOver()) return true;
+	if (mSaveTestMapButton.isMouseOver()) return true;
+	if (mNextSceneButton.isMouseOver()) return true;
+	if (mPrevSceneButton.isMouseOver()) return true;
+	
+	doublePair gPos = mGroundPicker.getPosition();
+	if ( abs(inX - gPos.x) < 100 && abs(inY - gPos.y) < 350 ) return true;
+	doublePair oPos = mObjectPicker.getPosition();
+	if ( abs(inX - oPos.x) < 100 && abs(inY - oPos.y) < 350 ) return true;
+	
+	return false;
+}
+
+void EditorScenePage::pointerDown( float inX, float inY ) {
+	
+	if ( mShowUI && hoverAnyUI(inX, inY) ) return;
+	
+	int x = round( inX / (CELL_D*scale) ) + mCurX;
+	int y = round( - inY / (CELL_D*scale) ) + mCurY;
+    
+	if( !isLastMouseButtonRight() && !mShowUI ) {
+		mCurX = x;
+		mCurY = y;
+		
+		if( mCurX < 0 ) {
+			mCurX = 0;
+		}
+		if( mCurX >= mSceneW ) {
+			mCurX = mSceneW - 1;
+		}
+		if( mCurY >= mSceneH ) {
+			mCurY = mSceneH - 1;
+		}
+		if( mCurY < 0 ) {
+			mCurY = 0;
+		}
+		
+	}
+	
+	if ( mShowUI ) {
+		
+		if( x < 0 || x >= mSceneW || y >= mSceneH || y < 0 ) {
+			checkVisible();
+			return;
+		}
+		
+		SceneCell *f = getFloorCell(x, y);
+		SceneCell *c = getCell(x, y);
+		
+		if ( !isLastMouseButtonRight() ) {
+			
+			char oWasRightClick = false;
+			char gWasRightClick = false;
+			
+			int oId = mObjectPicker.getSelectedObject( &oWasRightClick );
+			int gId = mGroundPicker.getSelectedObject( &gWasRightClick );
+			
+			if( oId > 0 ) {
+				char placed = false;
+				ObjectRecord *o = getObject( oId );
+				
+				if( isShiftKeyDown() && c->oID > 0 && !o->floor ) {
+					if( getObject( c->oID )->numSlots > c->contained.size() ) {
+						backup();
+						c->contained.push_back( oId );
+						SimpleVector<int> sub;
+						c->subContained.push_back( sub );
+						placed = true;
+					}
+				}
+				if( !placed && o->floor ) {
+					backup();
+					// place floor
+					f->oID = oId;
+					placed = true;
+				}
+				
+				if( !placed ) {
+					if( !getObject( oId )->person ) {
+						backup();
+						c->oID = oId;
+						c->contained.deleteAll();
+						c->subContained.deleteAll();
+						c->numUsesRemaining = o->numUses;                    
+					}
+				}
+			} else if( gId >= 0 ) {
+				
+				if( gId >= 0 ) {
+					
+					backup();
+					
+					if( isShiftKeyDown() ) {
+						
+						floodFill( x, y,
+								   c->biome,
+								   gId );
+					} else {
+						// single cell
+						mCells[ y ][ x ].biome = gId;
+					}
+				}				
+			}
+		} else {
+			backup();
+			clearCell(c);
+			if( isShiftKeyDown() ) clearCell(f);
+			if( isCommandKeyDown() ) c->biome = -1;
+		}
+		
+	}
+	
+	checkVisible();
+	
+}
+
+float cursorX;
+float cursorY;
+int cursorGridX;
+int cursorGridY;
+
+void EditorScenePage::pointerMove( float inX, float inY ) {    
+
+	int x = round( inX / (CELL_D*scale) ) + mCurX;
+	int y = round( - inY / (CELL_D*scale) ) + mCurY;
+	
+	cursorX = inX;
+	cursorY = inY;
+	cursorGridX = x;
+	cursorGridY = y;
+
     }
 
-        
+
+
+void EditorScenePage::pointerDrag( float inX, float inY ) {
+	
+	int x = round( inX / (CELL_D*scale) ) + mCurX;
+	int y = round( - inY / (CELL_D*scale) ) + mCurY;
+	
+	cursorX = inX;
+	cursorY = inY;
+	cursorGridX = x;
+	cursorGridY = y;
+	
+	if (!mShowUI) return;
+	if ( hoverAnyUI(inX, inY) ) return;
+	
+	if( x < 0 || x >= mSceneW || y >= mSceneH || y < 0 ) return;
+	
+	SceneCell *f = getFloorCell(x, y);
+	SceneCell *c = getCell(x, y);
+   
+	if ( !isLastMouseButtonRight() ) {
+		
+		char oWasRightClick = false;
+		char gWasRightClick = false;
+		
+		int oId = mObjectPicker.getSelectedObject( &oWasRightClick );
+		int gId = mGroundPicker.getSelectedObject( &gWasRightClick );
+		
+		if( oId > 0 ) {
+			char placed = false;
+			ObjectRecord *o = getObject( oId );
+			
+			if( oWasRightClick && c->oID > 0 && !o->floor ) {
+				if( getObject( c->oID )->numSlots > c->contained.size() ) {
+					// backup();
+					c->contained.push_back( oId );
+					SimpleVector<int> sub;
+					c->subContained.push_back( sub );
+					placed = true;
+				}
+			}
+			if( !placed && o->floor ) {
+				// backup();
+				// place floor
+				f->oID = oId;
+				placed = true;
+			}
+			
+			if( !placed ) {
+				if( !getObject( oId )->person ) {
+					// backup();
+					c->oID = oId;
+					c->contained.deleteAll();
+					c->subContained.deleteAll();
+					c->numUsesRemaining = o->numUses;                    
+				}
+			}
+		} else if( gId >= 0 ) {
+			
+			if( gId >= 0 ) {
+				
+				if( isShiftKeyDown() ) {
+					
+					floodFill( x, y,
+							   c->biome,
+							   gId );
+				} else {
+					// single cell
+					mCells[ y ][ x ].biome = gId;
+				}
+			}				
+		}
+	} else {
+		// backup();
+		clearCell(c);
+		if( isShiftKeyDown() ) clearCell(f);
+		if( isCommandKeyDown() ) c->biome = -1;
+	}
+	// checkVisible();
+	
+    }
+	
+
 
 
 void EditorScenePage::specialKeyDown( int inKeyCode ) {
-    
+	
     if( TextField::isAnyFocused() ) {
         return;
         }
@@ -2778,6 +3334,11 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
         char *fileText = f->readFileContents();
         
         if( fileText != NULL ) {
+			
+			while ( queueSize > 0 ) {
+				queuesPopBack();
+				}
+			queueIndex = 0;
             
             int numLines = 0;
             
@@ -2810,16 +3371,17 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
                 floorPresent = true;
                 next++;
                 }
-            
 
             clearScene();
             
             int numRead = 0;
             
             int x, y;
-            
-            numRead = sscanf( lines[next], "x=%d,y=%d", &x, &y );
-            next++;
+			
+			if (next < numLines) {
+				numRead = sscanf( lines[next], "x=%d,y=%d", &x, &y );
+				next++;
+			}
             
             while( numRead == 2 ) {
                 SceneCell *c = &( mCells[y][x] );
@@ -2851,6 +3413,9 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
             mCurY = mZeroY;
             mShiftX = 0;
             mShiftY = 0;
+			
+			spriteCount = round( std::max(mSceneH, mSceneW) / 200 * 25 );
+				
             }
         }
     

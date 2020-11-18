@@ -1341,7 +1341,7 @@ void drawFrame( char inUpdate ) {
                     //printOrphanedSoundReport();
                     initEmotion();
                     
-                    currentGamePage = importPage;
+                    currentGamePage = scenePage;
                     loadingComplete();
                     currentGamePage->base_makeActive( true );
                 }

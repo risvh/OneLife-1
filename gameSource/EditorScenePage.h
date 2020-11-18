@@ -20,6 +20,7 @@
 
 #include "RadioButtonSet.h"
 
+#include <vector>
 
 
 typedef struct SceneCell {
@@ -98,6 +99,10 @@ class EditorScenePage : public GamePage, public ActionListener {
         
         virtual void step();
 
+		virtual void pointerDown( float inX, float inY );
+		virtual void pointerMove( float inX, float inY );
+		virtual void pointerDrag( float inX, float inY );
+
         virtual void keyDown( unsigned char inASCII );
         virtual void keyUp( unsigned char inASCII );
         virtual void specialKeyDown( int inKeyCode );
@@ -107,11 +112,16 @@ class EditorScenePage : public GamePage, public ActionListener {
         char mPlayingTime;
         char mRecordingFrames;
         
+		TextButton mUndoButton;
+		TextButton mRedoButton;
+		
         TextButton mAnimEditorButton;
         
         TextButton mSaveNewButton;
         TextButton mReplaceButton;
+		TextButton mConfirmReplaceButton;
         TextButton mDeleteButton;
+		TextButton mConfirmDeleteButton;
         
         TextButton mSaveTestMapButton;
 
@@ -176,6 +186,8 @@ class EditorScenePage : public GamePage, public ActionListener {
         int mShiftX, mShiftY;
         
         int mCurX, mCurY;
+		int cursorGridX, cursorGridY;
+		int cursorX, cursorY;
         
         // location of origing in scene
         int mZeroX, mZeroY;
@@ -201,10 +213,24 @@ class EditorScenePage : public GamePage, public ActionListener {
         
         // check which GUI components should be visible
         void checkVisible();
+		
+		bool hoverAnyUI( float inX, float inY );
 
         SceneCell *getCurrentCell();
         SceneCell *getCurrentPersonCell();
         SceneCell *getCurrentFloorCell();
+		SceneCell *getCell(int absX, int absY);
+		SceneCell *getFloorCell(int absX, int absY);
+		
+		void destroySceneCellArray( SceneCell ***array );
+		SceneCell **copySceneCellArray( SceneCell **array );
+		void queuesPopBack();
+		void queuesPopFront();
+		void applySceneCellArrays( SceneCell **cells, SceneCell **floorCells );
+		
+		void backup();
+		void undo();
+		void redo();
         
         // clear everything but biome
         void clearCell( SceneCell *inCell );
