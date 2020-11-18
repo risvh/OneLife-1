@@ -812,11 +812,15 @@ void setupSpriteUseVis( ObjectRecord *inObject, int inUsesRemaining,
 char bothSameUseParent( int inAObjectID, int inBObjectID );
 
 
+// if this ID is a use dummy, gets the parent object ID
+int getObjectParent( int inObjectID );
+
+
+
 
 // processes object ID for client consumption
 // hiding hidden variable object ids behind parent ID
 int hideIDForClient( int inObjectID );
-
 
 
 // leverages object's spriteSkipDrawing arrays to draw portion of
