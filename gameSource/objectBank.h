@@ -678,7 +678,7 @@ void setObjectDrawLayerCutoff( int inCutoff );
 // (layers hidden when contained will be skipped)
 void setDrawnObjectContained( char inContained );
 
-
+void setDrawObjectScale(double inScale);
 
 
 // inAge -1 for no age modifier
