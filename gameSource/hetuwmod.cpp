@@ -822,7 +822,8 @@ void HetuwMod::livingLifeStep() {
 	}
 
 	if (stepCount % 46 == 0) {
-		if (!bFoundFamilyName) getOurFamilyName();
+		// if (!bFoundFamilyName) 
+			getOurFamilyName();
 		updatePlayersInRangePanel();
 	}
 
@@ -2677,9 +2678,12 @@ void HetuwMod::updatePlayersInRangePanel() {
 		playersInRangeNum++;
 
 		int youngWoman = 0;
-		if ( !getObject( o->displayID )->male )
-			if ( livingLifePage->hetuwGetAge( o ) < 40 )
+		if ( !getObject( o->displayID )->male ) {
+			bool fertile = true;
+			if (o->name != NULL) fertile = strstr(o->name, "+INFERTILE+") == NULL;
+			if ( livingLifePage->hetuwGetAge( o ) < 104 && fertile )
 				youngWoman = 1;
+		}
 
 		if (isRelated(o)) {
 			familiesInRange[0]->count++;
