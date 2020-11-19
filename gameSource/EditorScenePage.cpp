@@ -1335,7 +1335,8 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
                     }
 
                 char used;
-                
+				
+                setDrawObjectScale(scale);
                 drawObjectAnim( oID, 2, ground, 
                                 frameTime, 
                                 0,
@@ -1524,6 +1525,7 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
                         if( p->age >= 60 &&
                             p->graveID != -1 ) {
                             
+							setDrawObjectScale(scale);
                             holdingPos = 
                             drawObjectAnim( p->graveID, 2, ground, 
                                             thisFrameTime, 
@@ -1560,6 +1562,7 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
                                 clothingToDraw = getEmptyClothingSet();
                                 }
 
+                            setDrawObjectScale(scale);
                             holdingPos =
                             drawObjectAnim( p->oID, 2, p->anim, 
                                             thisFrameTime, 
@@ -1631,6 +1634,7 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
                             setAnimationEmotion( p->heldEmotion );
                             
                             if( splitHeld ) {
+                                setDrawObjectScale(scale);
                                 // draw behind part
                                 prepareToSkipSprites( getObject( p->heldID ), 
                                                       true );
