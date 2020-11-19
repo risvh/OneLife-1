@@ -30,6 +30,9 @@ int initCenterY = 100;
 int spriteCount;
 bool mapChanged = false;
 
+extern double viewHeightFraction;
+extern double viewWidth;
+
 extern Font *mainFont;
 extern Font *smallFont;
 
@@ -86,28 +89,53 @@ static SceneCell copyPeopleArea[ copyAreaSize ][ copyAreaSize ];
 EditorScenePage::EditorScenePage()
         : mPlayingTime( false ),
           mRecordingFrames( false ),
-		  mUndoButton( smallFont, -877, 350, "Undo" ),
-		  mRedoButton( smallFont, -817, 350, "Redo" ),
+		  
+		  // mUndoButton( smallFont, -877, 340, "Undo" ),
+		  // mRedoButton( smallFont, -817, 340, "Redo" ),
+		  mUndoButton( smallFont, -(int)( viewWidth/2 * 0.75 ) - 55, (int)( viewWidth*viewHeightFraction * 0.44 ), "Undo" ),
+		  mRedoButton( smallFont, mUndoButton.getPosition().x + 60, mUndoButton.getPosition().y, "Redo" ),
+		  
+		  
+		  
           mAnimEditorButton( mainFont, 210, 260, "Anim" ),
-          // mSaveNewButton( smallFont, -300, 260, "Save New" ),
-		  // mSaveNewButton( smallFont, -820, 360, "Save New" ),
-		  mSaveNewButton( smallFont, 820 + 30, 300, "Save New" ),
-          // mReplaceButton( smallFont, -500, 260, "Replace" ),
-		  mReplaceButton( smallFont, 820, 340, "Save" ),
-		  mConfirmReplaceButton( smallFont, 820, 340, "Confirm ?" ),
-          mDeleteButton( smallFont, 820, 220, "Delete file" ),
-		  mConfirmDeleteButton( smallFont, 820, 220, "Confirm ?" ),
+		  
+          // mGroundPicker( &groundPickable, -410, 90 ),
+          // mObjectPicker( &objectPickable, 410, 90 ),
+          // mGroundPicker( &groundPickable, 820, 90 ),
+          // mObjectPicker( &objectPickable, -820, 90 ),
+		  mGroundPicker( &groundPickable, (int)( viewWidth/2 * 0.75 ), (int)( viewWidth*viewHeightFraction * 0.15 ) ),
+		  mObjectPicker( &objectPickable, (int)( -viewWidth/2 * 0.75 ), (int)( viewWidth*viewHeightFraction * 0.15 ) ),
+		  
+		  
+		  
+          // mDeleteButton( smallFont, 820, 220, "Delete file" ),
+		  mDeleteButton( smallFont, (int)( viewWidth/2 * 0.75 ), mUndoButton.getPosition().y - 70, "Delete file" ),
+		  mConfirmDeleteButton( smallFont, mDeleteButton.getPosition().x, mDeleteButton.getPosition().y, "Confirm ?" ),
+		  
+		  
           // mSaveTestMapButton( smallFont, -300, 200, "Export Test Map" ),
-		  mSaveTestMapButton( smallFont, 820, 260, "Export Test Map" ),
+		  // mSaveTestMapButton( smallFont, 820, 260, "Export Test Map" ),
+		  mSaveTestMapButton( smallFont, (int)( viewWidth/2 * 0.75 ), mUndoButton.getPosition().y - 35, "Export Test Map" ),
+		  
+		  
+          // mSaveNewButton( smallFont, -300, 260, "Save New" ),
+		  // mSaveNewButton( smallFont, 820 + 30, 300, "Save New" ),
+		  mSaveNewButton( smallFont, (int)( viewWidth/2 * 0.75 ) + 30, mUndoButton.getPosition().y, "Save New" ),
+		  
+		  
+		  // mClearSceneButton( smallFont, 820 - 50, 300, "New" ),
+		  mClearSceneButton( smallFont, (int)( viewWidth/2 * 0.75 ) - 50, mUndoButton.getPosition().y, "New" ),
+		  
+
+		  // mReplaceButton( smallFont, -500, 260, "Replace" ),
+		  // mReplaceButton( smallFont, 820, 340, "Save" ),
+		  mReplaceButton( smallFont, (int)( viewWidth/2 * 0.75 ), mUndoButton.getPosition().y + 35, "Save" ),
+		  mConfirmReplaceButton( smallFont, mReplaceButton.getPosition().x, mReplaceButton.getPosition().y, "Confirm ?" ),
           // mNextSceneButton( smallFont, -420, 260, ">" ),
           // mPrevSceneButton( smallFont, -580, 260, "<" ),
           mNextSceneButton( smallFont, mReplaceButton.getPosition().x + 60, mReplaceButton.getPosition().y, ">" ),
           mPrevSceneButton( smallFont, mReplaceButton.getPosition().x - 60, mReplaceButton.getPosition().y, "<" ),
-          mClearSceneButton( smallFont, 820 - 50, 300, "New" ),
-          // mGroundPicker( &groundPickable, -410, 90 ),
-          // mObjectPicker( &objectPickable, 410, 90 ),
-          mGroundPicker( &groundPickable, 820, 90 ),
-          mObjectPicker( &objectPickable, -820, 90 ),
+		  
           mPersonAgeSlider( smallFont, -55, -220, 2,
                             100, 20,
                             0, 100, "Age" ),
@@ -334,17 +362,15 @@ EditorScenePage::EditorScenePage()
     checkNextPrevVisible();
 
 
-    addKeyClassDescription( &mKeyLegend, "Shft + WASD", "Move View" );
-	addKeyClassDescription( &mKeyLegend, "e + L - Click", "Jump View" );
+    addKeyClassDescription( &mKeyLegend, "E + L - Click / Shft + WASD", "Move view" );
 	addKeyClassDescription( &mKeyLegend, "L - Click", "Add selected" );
-	addKeyClassDescription( &mKeyLegend, "R - Click", "Clear cells" );
+	addKeyClassDescription( &mKeyLegend, "None/Shft/Ctrl + R - Click", "Clear object + floor/biome" );
 	
-	addKeyDescription( &mKeyLegend, 'e', "Hide/show UI" );
-	addKeyClassDescription( &mKeyLegend, "z", "Undo" );
-	addKeyClassDescription( &mKeyLegend, "x", "Redo" );
-	addKeyClassDescription( &mKeyLegend, "c/C", "Copy cell/area" );
-    addKeyClassDescription( &mKeyLegend, "v/V", "Paste cell/area" );
-	addKeyClassDescription( &mKeyLegend, "q", "Clear only floor" );
+	addKeyDescription( &mKeyLegend, 'E', "Hide/show UI" );
+	addKeyClassDescription( &mKeyLegend, "Z/X", "Undo/redo" );
+	addKeyClassDescription( &mKeyLegend, "None/Shft + C", "Copy cell/area" );
+    addKeyClassDescription( &mKeyLegend, "None/Shft + V", "Paste cell/area" );
+	addKeyClassDescription( &mKeyLegend, "Q", "Clear only floor" );
 
     addKeyClassDescription( &mKeyLegendG, "Shft + L - Click", "Flood fill" );
     addKeyClassDescription( &mKeyLegendC, "Shft + L - Click", "Add to Container" );
@@ -2047,8 +2073,8 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     // legendPos.x = -150;
     // legendPos.y += 20;
 	
-	doublePair legendPos = mGroundPicker.getPosition();
-	legendPos.y -= 350;
+	doublePair legendPos = mObjectPicker.getPosition();
+	legendPos.y -= 325;
 	legendPos.x -= 80;
             
     drawKeyLegend( &mKeyLegend, legendPos );
@@ -2099,9 +2125,10 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     
     
 
-    doublePair posStringPos = {-820, 400}; //mSaveNewButton.getPosition();
-    
-    posStringPos.x -= 40;
+    // doublePair posStringPos = {-820, 400}; //mSaveNewButton.getPosition();
+	doublePair posStringPos = mUndoButton.getPosition();
+    posStringPos.y += 65;
+    posStringPos.x += 15;
     
 
     setDrawColor( 0, 0, 0, 0.5 );
