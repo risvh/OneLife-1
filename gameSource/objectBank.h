@@ -371,7 +371,9 @@ typedef struct ObjectRecord {
         
         char noHighlight;
 		
-		char noBackAccess;
+        char autoDefaultTrans;
+
+        char noBackAccess;
         
         // for auto-orienting fences, walls, etc
         // all three objects know the IDs of all three objects

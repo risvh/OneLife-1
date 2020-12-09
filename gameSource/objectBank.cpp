@@ -521,6 +521,16 @@ static void setupWall( ObjectRecord *inR ) {
 
 
 
+static void setupAutoDefaultTrans( ObjectRecord *inR ) {
+    inR->autoDefaultTrans = false;
+
+    char *pos = strstr( inR->description, "+autoDefaultTrans" );
+    if( pos != NULL ) {
+        inR->autoDefaultTrans = true;
+        }
+    }
+
+
 static void setupNoBackAccess( ObjectRecord *inR ) {
     inR->noBackAccess = false;
 
@@ -595,8 +605,10 @@ float initObjectBankStep() {
                 setupNoHighlight( r );
                 
                 setupMaxPickupAge( r );
-				
-				setupNoBackAccess( r );
+                
+                setupAutoDefaultTrans( r );
+                
+                setupNoBackAccess( r );                
                 
                 // do this later, after we parse floorHugging
                 // setupWall( r );
@@ -3145,8 +3157,10 @@ int addObject( const char *inDescription,
     setupNoHighlight( r );
                 
     setupMaxPickupAge( r );
-	
-	setupNoBackAccess( r );
+
+    setupAutoDefaultTrans( r );
+
+    setupNoBackAccess( r );            
 
     setupWall( r );
 
