@@ -134,6 +134,9 @@ typedef struct LiveObject {
 
         char holdingFlip;
 
+        double lastFlipSendTime;
+        char lastFlipSent;
+
         char heldPosOverride;
         char heldPosOverrideAlmostOver;
         doublePair heldObjectPos;

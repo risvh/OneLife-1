@@ -623,6 +623,10 @@ typedef struct LiveObject {
         char waitingForForceResponse;
         
         int lastMoveSequenceNumber;
+
+
+        int facingLeft;
+        double lastFlipTime;
         
 
         int pathLength;
@@ -1951,6 +1955,7 @@ typedef enum messageType {
     VOGT,
     VOGX,
     PHOTO,
+    FLIP,
     UNKNOWN
     } messageType;
 
@@ -2354,6 +2359,9 @@ ClientMessage parseMessage( LiveObject *inPlayer, char *inMessage ) {
         if( numRead != 4 ) {
             m.id = 0;
             }
+        }
+    else if( strcmp( nameBuffer, "FLIP" ) == 0 ) {
+        m.type = FLIP;
         }
      else {
         m.type = UNKNOWN;
@@ -7381,6 +7389,8 @@ int processLoggedInPlayer( char inAllowReconnect,
         newObject.foodStore -= 6;
         }
     
+    double currentTime = Time::getCurrentTime();
+    
 
     newObject.envHeat = targetHeat;
     newObject.bodyHeat = targetHeat;
@@ -7388,12 +7398,12 @@ int processLoggedInPlayer( char inAllowReconnect,
     newObject.lastBiomeHeat = targetHeat;
     newObject.heat = 0.5;
     newObject.heatUpdate = false;
-    newObject.lastHeatUpdate = Time::getCurrentTime();
+    newObject.lastHeatUpdate = currentTime;
     newObject.isIndoors = false;
     
 
     newObject.foodDecrementETASeconds =
-        Time::getCurrentTime() + 
+        currentTime + 
         computeFoodDecrementTimeSeconds( &newObject );
                 
     newObject.foodUpdate = true;
@@ -7415,6 +7425,10 @@ int processLoggedInPlayer( char inAllowReconnect,
     newObject.xd = 0;
     newObject.yd = 0;
     
+    newObject.facingLeft = 0;
+    newObject.lastFlipTime = currentTime;
+    
+
     newObject.mapChunkPathCheckedDest.x = 0;
     newObject.mapChunkPathCheckedDest.y = 0;
     
@@ -13151,6 +13165,10 @@ int main() {
         SimpleVector<ChangePosition> newUpdatesPos;
         SimpleVector<int> newUpdatePlayerIDs;
 
+        SimpleVector<int> newFlipPlayerIDs;
+        SimpleVector<int> newFlipFacingLeft;
+        SimpleVector<GridPos> newFlipPositions;
+
 
         // these are global, so they're not tagged with positions for
         // spatial filtering
@@ -14143,7 +14161,31 @@ int main() {
                                          strlen( message ) );
                     delete [] message;
                     }
-
+                else if( m.type == FLIP ) {
+                    
+                    if( currentTime - nextPlayer->lastFlipTime > 1.75 ) {
+                        // client should send at most one flip ever 2 seconds
+                        // allow some wiggle room
+                        GridPos p = getPlayerPos( nextPlayer );
+                        
+                        int oldFacingLeft = nextPlayer->facingLeft;
+                        
+                        if( m.x > p.x ) {
+                            nextPlayer-> facingLeft = 0;
+                            }
+                        else if( m.x < p.x ) {
+                            nextPlayer->facingLeft = 1;
+                            }
+                        
+                        if( oldFacingLeft != nextPlayer->facingLeft ) {
+                            nextPlayer->lastFlipTime = currentTime;
+                            newFlipPlayerIDs.push_back( nextPlayer->id );
+                            newFlipFacingLeft.push_back( 
+                                nextPlayer->facingLeft );
+                            newFlipPositions.push_back( p );
+                            }
+                        }
+                    }
                 else if( m.type != SAY && m.type != EMOT &&
                          nextPlayer->waitingForForceResponse ) {
                     // if we're waiting for a FORCE response, ignore
@@ -20071,6 +20113,8 @@ int main() {
                 
                 // everyone gets all owner change messages
                 if( newOwnerPos.size() > 0 ) {
+
+                    GridPos nextPlayerPos = getPlayerPos( nextPlayer );
                     
                     // compose OW messages for this player
                     for( int u=0; u<newOwnerPos.size(); u++ ) {
@@ -20085,7 +20129,7 @@ int main() {
                         char known = isKnownOwned( nextPlayer, p );
                         
                         if( known ||
-                            distance( p, getPlayerPos( nextPlayer ) )
+                            distance( p, nextPlayerPos )
                             < maxDist2 
                             ||
                             isOwned( nextPlayer, p ) ) {
@@ -20108,6 +20152,50 @@ int main() {
                                                  strlen( ownerMessage ) );
                             delete [] ownerMessage;
                             }
+                        }
+                    }
+
+
+
+                if( newFlipPlayerIDs.size() > 0 ) {
+
+                    GridPos nextPlayerPos = getPlayerPos( nextPlayer );
+
+                    // compose FL messages for this player
+                    // only for in-range players that flipped
+                    SimpleVector<char> messageWorking;
+                    
+                    char firstLine = true;
+                    
+                    for( int u=0; u<newFlipPlayerIDs.size(); u++ ) {
+                        GridPos p = newFlipPositions.getElementDirect( u );
+                        
+                        if( distance( p, nextPlayerPos ) < maxDist2 ) {
+
+                            if( firstLine ) {
+                                messageWorking.appendElementString( "FL\n" );
+                                firstLine = false;
+                                }
+
+                            char *line = 
+                                autoSprintf( 
+                                    "%d %d\n",
+                                    newFlipPlayerIDs.getElementDirect( u ),
+                                    newFlipFacingLeft.getElementDirect( u ) );
+                            
+                            messageWorking.appendElementString( line );
+                            
+                            delete [] line;
+                            }
+                        }
+                    if( messageWorking.size() > 0 ) {
+                        messageWorking.push_back( '#' );
+                            
+                        char *message = messageWorking.getElementString();
+                        
+                        sendMessageToPlayer( nextPlayer, message,
+                                             strlen( message ) );
+                        delete [] message;
                         }
                     }
 
