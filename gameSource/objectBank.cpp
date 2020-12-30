@@ -3801,6 +3801,9 @@ HoldingPos drawObject( ObjectRecord *inObject, doublePair inPos, double inRot,
                 rot += rotOffset;
                 }
             }
+			
+		centerOffset.x *= drawObjectScale;
+		centerOffset.y *= drawObjectScale;
 
 		doublePair rawSlotPos = inObject->slotPos[i];
 		rawSlotPos.x *= drawObjectScale;
