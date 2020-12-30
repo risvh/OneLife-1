@@ -22,6 +22,10 @@ int yLimit = 4/scale/scale;
 int cursorDim = 32*scale;
 int rectDim = 64*scale;
 
+int pickedOID;
+int pickedGID;
+float justSampledFade;
+
 int mapSizeX = 200;
 int mapSizeY = 200;
 int initCenterX = 100;
@@ -184,6 +188,7 @@ EditorScenePage::EditorScenePage()
           mShowUI( true ),
           mShowWhite( false ),
           mCursorFade( 1.0 ),
+		  justSampledFade( 0.0 ),
           mSceneW( mapSizeX ),
           mSceneH( mapSizeY ),
           mShiftX( -initCenterX ), 
@@ -368,6 +373,7 @@ EditorScenePage::EditorScenePage()
 	
 	addKeyDescription( &mKeyLegend, 'E', "Hide/show UI" );
 	addKeyClassDescription( &mKeyLegend, "Z/X", "Undo/redo" );
+	addKeyClassDescription( &mKeyLegend, "None/Shft/Ctrl + F", "Pick object/floor/biome" );
 	addKeyClassDescription( &mKeyLegend, "None/Shft + C", "Copy cell/area" );
     addKeyClassDescription( &mKeyLegend, "None/Shft + V", "Paste cell/area" );
 	addKeyClassDescription( &mKeyLegend, "Q", "Clear only floor" );
@@ -454,12 +460,20 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
 		}
     else if( inTarget == &mGroundPicker ) {
 		
+		// char gWasRightClick = false;
+		// pickedGID = mGroundPicker.getSelectedObject( &gWasRightClick );
 		mObjectPicker.unselectObject();
+		// pickedOID = 0;
+		mGroundPickerClicked = true;
 
         }
     else if( inTarget == &mObjectPicker ) {
 		
+		// char oWasRightClick = false;
+		// pickedOID = mObjectPicker.getSelectedObject( &oWasRightClick );
 		mGroundPicker.unselectObject();
+		// pickedGID = -1;
+		mObjectPickerClicked = true;
 		
         }
     else if( inTarget == &mSaveNewButton ) {
@@ -1928,8 +1942,8 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     
     doublePair curPos = cornerPos;
                 
-    curPos.x += mCurX * CELL_D*scale;
-    curPos.y -= mCurY * CELL_D*scale;
+    curPos.x += cursorGridX * CELL_D*scale;
+    curPos.y -= cursorGridY * CELL_D*scale;
 
     curPos.x += mShiftX * CELL_D*scale;
     curPos.y += mShiftY * CELL_D*scale;
@@ -1950,7 +1964,6 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     
 
 
-
     // draw a frame around the current cell
     startAddingToStencil( false, true );
     
@@ -1966,38 +1979,25 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     stopStencil();
 		
 		
-	char wasRightClick = false;
-	int id = mObjectPicker.getSelectedObject( &wasRightClick );
 	doublePair cursorInfoPos = {cursorX + 35.0, cursorY - 25.0};
-	char *cursorInfo; //mSceneID != -1 && 
-	if ( cursorGridX >= 0 && cursorGridY >= 0 && cursorGridX < mSceneW && cursorGridY < mSceneH ) {
-		int oid = getCell(cursorGridX, cursorGridY)->oID;
-		int x = cursorGridX - mZeroX;
-		int y = mZeroY - cursorGridY;
-		
-		if (id > 0 && oid > 0) {
-			cursorInfo = autoSprintf( "%d, %d, %d, picked: %d", x, y, oid, id );
-		} else if (oid > 0) {
-			cursorInfo = autoSprintf( "%d, %d, %d", x, y, oid );
-		} else if (id > 0) {
-			cursorInfo = autoSprintf( "%d, %d, picked: %d", x, y, id );
-		} else {
-			cursorInfo = autoSprintf( "%d, %d", x, y );
-		}
-		
-		double w = smallFont->measureString( cursorInfo );
-		double h = smallFont->getFontHeight();
-		int padding = 4;
-		w += 2 * padding;
-		h += 2 * padding;
-		
-		setDrawColor( 0, 0, 0, 0.5 );
-		doublePair rectPos = { cursorInfoPos.x + w/2 - padding, cursorInfoPos.y };
-		drawRect( rectPos, w / 2, h / 2 );
-		setDrawColor( 1, 1, 1, 1 );
-		smallFont->drawString( cursorInfo, cursorInfoPos, alignLeft );		
+	char *cursorInfo;
 
-	}
+	int x = cursorGridX - mZeroX;
+	int y = mZeroY - cursorGridY;
+	
+	cursorInfo = autoSprintf( "%d, %d", x, y );
+	
+	double w2 = smallFont->measureString( cursorInfo );
+	double h2 = smallFont->getFontHeight();
+	int padding = 4;
+	w2 += 2 * padding;
+	h2 += 2 * padding;
+	
+	setDrawColor( 0, 0, 0, 0.5 );
+	doublePair rectPos = { cursorInfoPos.x + w2/2 - padding, cursorInfoPos.y };
+	drawRect( rectPos, w2 / 2, h2 / 2 );
+	setDrawColor( 1, 1, 1, 1 );
+	smallFont->drawString( cursorInfo, cursorInfoPos, alignLeft );
 
     if( !mShowUI ) {
         return;
@@ -2018,38 +2018,53 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     
     setDrawColor( 1, 1, 1, 1 );
     
+	
     
-    doublePair cornerPos = zeroPos;
-    cornerPos.x -= cursorDim+1;
-    cornerPos.y -= cursorDim+1;
-    drawSquare( cornerPos, cursorDim );
+    // doublePair cornerPos = zeroPos;
+    // cornerPos.x -= cursorDim+1;
+    // cornerPos.y -= cursorDim+1;
+    // drawSquare( cornerPos, cursorDim );
 
-    cornerPos = zeroPos;
-    cornerPos.x += cursorDim+1;
-    cornerPos.y -= cursorDim+1;
-    drawSquare( cornerPos, cursorDim );
+    // cornerPos = zeroPos;
+    // cornerPos.x += cursorDim+1;
+    // cornerPos.y -= cursorDim+1;
+    // drawSquare( cornerPos, cursorDim );
 
-    cornerPos = zeroPos;
-    cornerPos.x -= cursorDim+1;
-    cornerPos.y += cursorDim+1;
-    drawSquare( cornerPos, cursorDim );
+    // cornerPos = zeroPos;
+    // cornerPos.x -= cursorDim+1;
+    // cornerPos.y += cursorDim+1;
+    // drawSquare( cornerPos, cursorDim );
 
-    cornerPos = zeroPos;
-    cornerPos.x += cursorDim+1;
-    cornerPos.y += cursorDim+1;
-    drawSquare( cornerPos, cursorDim );
+    // cornerPos = zeroPos;
+    // cornerPos.x += cursorDim+1;
+    // cornerPos.y += cursorDim+1;
+    // drawSquare( cornerPos, cursorDim );
 
     startDrawingThroughStencil( true );
+	
+	justSampledFade -= 0.05;
+	if ( justSampledFade < 0 ) justSampledFade = 0.0;
+
+    setDrawColor( 1, 1, 1, 0.5 * justSampledFade );
+    drawSquare( curPos, rectDim );
     
-    setDrawColor( 1, 0, 0, 0.75 );
-    drawSquare( zeroPos, cursorDim*2 );
+    // setDrawColor( 1, 0, 0, 0.75 );
+    // drawSquare( zeroPos, cursorDim*2 );
 
     stopStencil();
+	
+	
 
     
 
 
-    SceneCell *c = getCurrentCell();
+    // SceneCell *c = getCurrentCell();
+	SceneCell *c;
+	if ( cursorGridX >= 0 && cursorGridY >= 0 && cursorGridX < mSceneW && cursorGridY < mSceneH ) {
+		c = getCell(cursorGridX, cursorGridY);
+	} else {
+		c = &mEmptyCell;
+	}
     SceneCell *p = getCurrentPersonCell();
     
 
@@ -2107,8 +2122,8 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
 
 
     
-    int relX = mCurX - mZeroX;
-    int relY = mZeroY - mCurY;
+    int relX = cursorGridX - mZeroX;
+    int relY = mZeroY - cursorGridY;
     
     
     
@@ -2131,7 +2146,7 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
 
     // doublePair posStringPos = {-820, 400}; //mSaveNewButton.getPosition();
 	doublePair posStringPos = mUndoButton.getPosition();
-    posStringPos.y += 65;
+    posStringPos.y += 90;
     posStringPos.x += 15;
     
 
@@ -2147,13 +2162,26 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
     delete [] posStringX;
     delete [] posStringY;
 
-    if( c->oID > 0 ) {
+    if( pickedOID > 0 ) {
         // doublePair pos = { -400, -290 };
 		doublePair pos = posStringPos;
 		pos.y -= 25;
 		pos.x -= 40;
         
-        char *s = autoSprintf( "oID=%d  %s", c->oID,
+        char *s = autoSprintf( "Picked: #%d  %s", pickedOID,
+                               getObject( pickedOID )->description );
+        
+
+        drawOutlineString( s, pos, alignLeft );
+        delete [] s;
+        }
+    if( c->oID > 0 ) {
+        // doublePair pos = { -400, -290 };
+		doublePair pos = posStringPos;
+		pos.y -= 50;
+		pos.x -= 40;
+        
+        char *s = autoSprintf( "Drawn: #%d  %s", c->oID,
                                getObject( c->oID )->description );
         
 
@@ -2424,6 +2452,37 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
 			break;
 	}
 	
+	if ( tolower(inASCII) == 'f' ) {
+		if ( mShowUI ) {
+			int tempOID = -1;
+			if ( !isShiftKeyDown() ) {
+				tempOID = getCell(cursorGridX, cursorGridY)->oID;
+				
+			} else {
+				tempOID = getFloorCell(cursorGridX, cursorGridY)->oID;
+			}
+			if (tempOID != -1) {
+				mObjectPicker.unselectObject();
+				mGroundPicker.unselectObject();
+				pickedOID = tempOID;
+				pickedGID = -1;
+				justSampledFade = 1.0;
+			}
+		}
+	}
+	if ( inASCII + 64 == toupper('f') ) {
+		if ( mShowUI ) {
+			int tempBiome = -1;
+			tempBiome = getCell(cursorGridX, cursorGridY)->biome;
+			if (tempBiome != -1) {
+				mObjectPicker.unselectObject();
+				mGroundPicker.unselectObject();
+				pickedOID = 0;
+				pickedGID = tempBiome;
+				justSampledFade = 1.0;
+			}
+		}
+	}
     if ( tolower(inASCII) == 'e' ) {
         mShowUI = ! mShowUI;
         skipDrawingSubComponents( ! mShowUI );
@@ -2790,6 +2849,24 @@ bool EditorScenePage::hoverAnyUI( float inX, float inY ) {
 	return false;
 }
 
+void EditorScenePage::pointerUp( float inX, float inY ) {
+	
+	if ( mObjectPickerClicked ) {
+		char oWasRightClick = false;
+		pickedOID = mObjectPicker.getSelectedObject( &oWasRightClick );
+		pickedGID = -1;
+		mObjectPickerClicked = false;
+	}
+	if ( mGroundPickerClicked ) {
+		char gWasRightClick = false;
+		pickedGID = mGroundPicker.getSelectedObject( &gWasRightClick );
+		pickedOID = 0;
+		mGroundPickerClicked = false;
+		
+	}
+	
+}
+
 void EditorScenePage::pointerDown( float inX, float inY ) {
 	
 	if ( mShowUI && hoverAnyUI(inX, inY) ) return;
@@ -2831,8 +2908,11 @@ void EditorScenePage::pointerDown( float inX, float inY ) {
 			char oWasRightClick = false;
 			char gWasRightClick = false;
 			
-			int oId = mObjectPicker.getSelectedObject( &oWasRightClick );
-			int gId = mGroundPicker.getSelectedObject( &gWasRightClick );
+			int oId = pickedOID;
+			int gId = pickedGID;
+			
+			// int oId = mObjectPicker.getSelectedObject( &oWasRightClick );
+			// int gId = mGroundPicker.getSelectedObject( &gWasRightClick );
 			
 			if( oId > 0 ) {
 				char placed = false;
@@ -2935,8 +3015,11 @@ void EditorScenePage::pointerDrag( float inX, float inY ) {
 		char oWasRightClick = false;
 		char gWasRightClick = false;
 		
-		int oId = mObjectPicker.getSelectedObject( &oWasRightClick );
-		int gId = mGroundPicker.getSelectedObject( &gWasRightClick );
+		int oId = pickedOID;
+		int gId = pickedGID;
+		
+		// int oId = mObjectPicker.getSelectedObject( &oWasRightClick );
+		// int gId = mGroundPicker.getSelectedObject( &gWasRightClick );
 		
 		if( oId > 0 ) {
 			char placed = false;

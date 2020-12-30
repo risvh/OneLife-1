@@ -105,6 +105,7 @@ class EditorScenePage : public GamePage, public ActionListener {
         
         virtual void step();
 
+		virtual void pointerUp( float inX, float inY );
 		virtual void pointerDown( float inX, float inY );
 		virtual void pointerMove( float inX, float inY );
 		virtual void pointerDrag( float inX, float inY );
@@ -211,6 +212,12 @@ class EditorScenePage : public GamePage, public ActionListener {
 
         KeyLegend mKeyLegend, mKeyLegendG, mKeyLegendC, mKeyLegendP, 
             mKeyLegendF;
+		
+		bool mObjectPickerClicked;
+		bool mGroundPickerClicked;
+		int pickedOID;
+		int pickedGID;
+		float justSampledFade;
 
 
         void floodFill( int inX, int inY, int inOldBiome, int inNewBiome );
