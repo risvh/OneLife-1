@@ -359,7 +359,7 @@ EditorScenePage::EditorScenePage()
     checkNextPrevVisible();
 
 
-    addKeyClassDescription( &mKeyLegend, "E + L - Click / Shft + WASD", "Move view" );
+    addKeyClassDescription( &mKeyLegend, "Ctrl + L - Click / Shft + WASD", "Move view" );
 	addKeyClassDescription( &mKeyLegend, "L - Click", "Add selected" );
 	addKeyClassDescription( &mKeyLegend, "None/Shft/Ctrl + R - Click", "Clear object + floor/biome" );
 	
@@ -2811,7 +2811,9 @@ void EditorScenePage::pointerDown( float inX, float inY ) {
 	int x = round( inX / (CELL_D*scale) ) + mCurX;
 	int y = round( - inY / (CELL_D*scale) ) + mCurY;
     
-	if( !isLastMouseButtonRight() && !mShowUI ) {
+	if( ( !mShowUI && !isLastMouseButtonRight() ) ||
+		( mShowUI && !isLastMouseButtonRight() && isCommandKeyDown() )
+	) {
 		mCurX = x;
 		mCurY = y;
 		
@@ -2830,7 +2832,7 @@ void EditorScenePage::pointerDown( float inX, float inY ) {
 		
 	}
 	
-	if ( mShowUI ) {
+	if ( mShowUI && !isCommandKeyDown() ) {
 		
 		if( x < 0 || x >= mSceneW || y >= mSceneH || y < 0 ) {
 			checkVisible();
@@ -2947,7 +2949,7 @@ void EditorScenePage::pointerDrag( float inX, float inY ) {
 	SceneCell *f = getFloorCell(x, y);
 	SceneCell *c = getCell(x, y);
    
-	if ( !isLastMouseButtonRight() ) {
+	if ( !isLastMouseButtonRight() && !isCommandKeyDown() ) {
 		
 		char oWasRightClick = false;
 		char gWasRightClick = false;
