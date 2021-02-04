@@ -3012,61 +3012,65 @@ void EditorScenePage::pointerDrag( float inX, float inY ) {
 	SceneCell *f = getFloorCell(x, y);
 	SceneCell *c = getCell(x, y);
    
-	if ( !isLastMouseButtonRight() && !isCommandKeyDown() ) {
+	if ( !isLastMouseButtonRight() ) {
 		
-		char oWasRightClick = false;
-		char gWasRightClick = false;
+		if ( !isCommandKeyDown() ) {
 		
-		int oId = pickedOID;
-		int gId = pickedGID;
-		
-		// int oId = mObjectPicker.getSelectedObject( &oWasRightClick );
-		// int gId = mGroundPicker.getSelectedObject( &gWasRightClick );
-		
-		if( oId > 0 ) {
-			char placed = false;
-			ObjectRecord *o = getObject( oId );
+			char oWasRightClick = false;
+			char gWasRightClick = false;
 			
-			if( oWasRightClick && c->oID > 0 && !o->floor ) {
-				if( getObject( c->oID )->numSlots > c->contained.size() ) {
+			int oId = pickedOID;
+			int gId = pickedGID;
+			
+			// int oId = mObjectPicker.getSelectedObject( &oWasRightClick );
+			// int gId = mGroundPicker.getSelectedObject( &gWasRightClick );
+			
+			if( oId > 0 ) {
+				char placed = false;
+				ObjectRecord *o = getObject( oId );
+				
+				if( oWasRightClick && c->oID > 0 && !o->floor ) {
+					if( getObject( c->oID )->numSlots > c->contained.size() ) {
+						// backup();
+						c->contained.push_back( oId );
+						SimpleVector<int> sub;
+						c->subContained.push_back( sub );
+						placed = true;
+					}
+				}
+				if( !placed && o->floor ) {
 					// backup();
-					c->contained.push_back( oId );
-					SimpleVector<int> sub;
-					c->subContained.push_back( sub );
+					// place floor
+					f->oID = oId;
 					placed = true;
 				}
-			}
-			if( !placed && o->floor ) {
-				// backup();
-				// place floor
-				f->oID = oId;
-				placed = true;
-			}
-			
-			if( !placed ) {
-				if( !getObject( oId )->person ) {
-					// backup();
-					c->oID = oId;
-					c->contained.deleteAll();
-					c->subContained.deleteAll();
-					c->numUsesRemaining = o->numUses;                    
-				}
-			}
-		} else if( gId >= 0 ) {
-			
-			if( gId >= 0 ) {
 				
-				if( isShiftKeyDown() ) {
-					
-					floodFill( x, y,
-							   c->biome,
-							   gId );
-				} else {
-					// single cell
-					mCells[ y ][ x ].biome = gId;
+				if( !placed ) {
+					if( !getObject( oId )->person ) {
+						// backup();
+						c->oID = oId;
+						c->contained.deleteAll();
+						c->subContained.deleteAll();
+						c->numUsesRemaining = o->numUses;                    
+					}
 				}
-			}				
+			} else if( gId >= 0 ) {
+				
+				if( gId >= 0 ) {
+					
+					if( isShiftKeyDown() ) {
+						
+						floodFill( x, y,
+								   c->biome,
+								   gId );
+					} else {
+						// single cell
+						mCells[ y ][ x ].biome = gId;
+					}
+				}				
+			}
 		}
+		
 	} else {
 		// backup();
 		clearCell(c);
