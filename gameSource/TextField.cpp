@@ -298,10 +298,10 @@ void TextField::draw() {
         }
     
 
-    drawRect( - mWide / 2, - mHigh / 2, 
-              mWide / 2, mHigh / 2 );
+    // drawRect( - mWide / 2, - mHigh / 2, 
+              // mWide / 2, mHigh / 2 );
     
-    setDrawColor( 0.25, 0.25, 0.25, 1 );
+    setDrawColor( 0, 0, 0, 1 );
     double pixWidth = mCharWidth / 8;
 
 
@@ -319,17 +319,17 @@ void TextField::draw() {
     setDrawColor( 1, 1, 1, 1 );
 
     if( mContentsHidden && mHiddenSprite != NULL ) {
-        startAddingToStencil( false, true );
+        // startAddingToStencil( false, true );
 
-        drawRect( rectStartX, rectStartY,
-                  rectEndX, rectEndY );
-        startDrawingThroughStencil();
+        // drawRect( rectStartX, rectStartY,
+                  // rectEndX, rectEndY );
+        // startDrawingThroughStencil();
         
         doublePair pos = { 0, 0 };
         
-        drawSprite( mHiddenSprite, pos );
+        // drawSprite( mHiddenSprite, pos );
         
-        stopStencil();
+        // stopStencil();
         }
     
 
@@ -363,6 +363,8 @@ void TextField::draw() {
         
         doublePair labelPos = { xPos, yPos };
         
+		if ( !isFocused() ) setDrawColor( 0.5, 0.5, 0.5, 1 );
+		
         mFont->drawString( mLabelText, labelPos, a );
         }
     
@@ -565,7 +567,7 @@ void TextField::draw() {
         
         delete [] beforeCursorText;
         
-        setDrawColor( 0, 0, 0, 0.5 );
+        setDrawColor( 0.5, 0.5, 0.5, 1 );
         
         drawRect( textPos.x + cursorXOffset, 
                   rectStartY - pixWidth,

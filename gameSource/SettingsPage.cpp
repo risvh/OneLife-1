@@ -380,7 +380,6 @@ void SettingsPage::draw( doublePair inViewCenter,
 	
 	mCustomServerAddressField.setVisible( mUseCustomServerBox.getToggled() );
 	mCustomServerPortField.setVisible( mUseCustomServerBox.getToggled() );
-	
     
     doublePair pos = mFullscreenBox.getPosition();
     

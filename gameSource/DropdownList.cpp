@@ -406,10 +406,10 @@ void DropdownList::draw() {
         }
     
 
-    drawRect( - mWide / 2, - mHigh / 2, 
-              mWide / 2, mHigh / 2 );
+    // drawRect( - mWide / 2, - mHigh / 2, 
+              // mWide / 2, mHigh / 2 );
     
-    setDrawColor( 0.25, 0.25, 0.25, 1 );
+    setDrawColor( 0, 0, 0, 1 );
     double pixWidth = mCharWidth / 8;
 
 
@@ -427,17 +427,17 @@ void DropdownList::draw() {
     setDrawColor( 1, 1, 1, 1 );
 
     if( mContentsHidden && mHiddenSprite != NULL ) {
-        startAddingToStencil( false, true );
+        // startAddingToStencil( false, true );
 
-        drawRect( rectStartX, rectStartY,
-                  rectEndX, rectEndY );
-        startDrawingThroughStencil();
+        // drawRect( rectStartX, rectStartY,
+                  // rectEndX, rectEndY );
+        // startDrawingThroughStencil();
         
         doublePair pos = { 0, 0 };
         
-        drawSprite( mHiddenSprite, pos );
+        // drawSprite( mHiddenSprite, pos );
         
-        stopStencil();
+        // stopStencil();
         }
     
 
@@ -470,6 +470,8 @@ void DropdownList::draw() {
             }
         
         doublePair labelPos = { xPos, yPos };
+		
+		if ( !isFocused() ) setDrawColor( 0.5, 0.5, 0.5, 1 );
         
         mFont->drawString( mLabelText, labelPos, a );
         }
@@ -616,12 +618,12 @@ void DropdownList::draw() {
 			for( int i=0; i<numLines; i++ ) {
 				
 				doublePair linePos = { centerPos.x, centerPos.y - (i + 1) * mHigh };
-				float backgroundAlpha = 0.3;
-				if( hoverIndex == i ) backgroundAlpha = 0.7;
+				float whiteness = 0.0;
+				if( hoverIndex == i ) whiteness = 0.3;
 				setDrawColor( 0, 0, 0, 1 );
 				drawRect( - mWide / 2, linePos.y - mHigh / 2, 
 					mWide / 2, linePos.y + mHigh / 2 );
-				setDrawColor( 1, 1, 1, backgroundAlpha );
+				setDrawColor( whiteness, whiteness, whiteness, 1 );
 				drawRect( - mWide / 2, linePos.y - mHigh / 2, 
 					mWide / 2, linePos.y + mHigh / 2 );
 				doublePair lineTextPos = { textPos.x, textPos.y - (i + 1) * mHigh };
@@ -637,7 +639,7 @@ void DropdownList::draw() {
 						lineDeleteButtonPos.y + buttonRightOffset / 2 + mBorderWide / 2 );
 					}
 				
-				setDrawColor( 1, 1, 1, 1 );
+				setDrawColor( 0.5, 0.5, 0.5, 1 );
 				char *lineText = stringDuplicate( lines[i] );
 				
 				if( mFont->measureString( lineText ) 
@@ -657,7 +659,7 @@ void DropdownList::draw() {
 				
 				mFont->drawString( lineText, lineTextPos, alignLeft );
 				
-				setDrawColor( 1, 1, 1, 1 );
+				setDrawColor( 0.5, 0.5, 0.5, 1 );
 				mFont->drawString( "x", lineDeleteButtonPos, alignCenter );
 				
 				
@@ -688,7 +690,7 @@ void DropdownList::draw() {
                                0.25, 0.25, 0.25, 0,
                                0.25, 0.25, 0.25, 0 };
 
-        drawQuads( 1, verts , vertColors );
+        // drawQuads( 1, verts , vertColors );
         }
     if( tooLongBack ) {
         // draw shaded overlay over right of string
@@ -702,7 +704,7 @@ void DropdownList::draw() {
                                0.25, 0.25, 0.25, 1,
                                0.25, 0.25, 0.25, 1 };
 
-        drawQuads( 1, verts , vertColors );
+        // drawQuads( 1, verts , vertColors );
         }
     
     if( mFocused && mCursorDrawPosition > -1 ) {            
@@ -737,7 +739,7 @@ void DropdownList::draw() {
         
         delete [] beforeCursorText;
         
-        setDrawColor( 0, 0, 0, 0.5 );
+        setDrawColor( 0.5, 0.5, 0.5, 1 );
         
         drawRect( textPos.x + cursorXOffset, 
                   rectStartY - pixWidth,

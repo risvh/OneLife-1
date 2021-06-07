@@ -108,7 +108,7 @@ void RadioButtonSet::actionPerformed( GUIComponent *inTarget ) {
 
 
 void RadioButtonSet::draw() {
-    setDrawColor( 1, 1, 1, 1 );
+    setDrawColor( 0.5, 0.5, 0.5, 1 );
 
     double sep = -mCheckboxSep;
     

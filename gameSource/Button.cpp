@@ -23,9 +23,9 @@ Button::Button( double inX, double inY,
     
     setHoverColor( 0.886, 0.764, 0.475, 1 );
     
-    setNoHoverColor( 1, 1, 1, 1 );
+    setNoHoverColor( 0.5, 0.5, 0.5, 1 );
     
-    setFillColor( 0.25, 0.25, 0.25, 1 );
+    setFillColor( 0, 0, 0, 1 );
     setDragOverFillColor( 0.1, 0.1, 0.1, 1 );
 
     setHoverBorderColor( 0.75, 0.75, 0.75, 1 );
@@ -192,15 +192,15 @@ void Button::drawContents() {
 void Button::drawBorder() {
     if( mBracketCoverLength >= 0 ) {
         // one rect on either end
-        drawRect( - mWide / 2, 
-                  - mHigh / 2, 
-                  - mWide / 2 + mBracketCoverLength, 
-                  mHigh / 2 );
+        // drawRect( - mWide / 2, 
+                  // - mHigh / 2, 
+                  // - mWide / 2 + mBracketCoverLength, 
+                  // mHigh / 2 );
         
-        drawRect( mWide / 2 - mBracketCoverLength, 
-                  - mHigh / 2, 
-                  mWide / 2, 
-                  mHigh / 2 );
+        // drawRect( mWide / 2 - mBracketCoverLength, 
+                  // - mHigh / 2, 
+                  // mWide / 2, 
+                  // mHigh / 2 );
         }
     else {
         // one solid rect

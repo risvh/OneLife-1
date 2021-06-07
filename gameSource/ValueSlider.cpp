@@ -14,7 +14,7 @@ ValueSlider::ValueSlider( Font *inDisplayFont,
                           double inHighValue,
                           const char *inLabelText )
         : PageComponent( inX, inY ),
-          mFillColor( 0.8, 0.8, 0, 1 ),
+          mFillColor( 0.5, 0.5, 0.5, 1 ),
           mBackFillColor( 0, 0, 0, 1 ),
           mFont( inDisplayFont ),
           mValueField( inDisplayFont, 0, 0, 5,
@@ -155,7 +155,8 @@ void ValueSlider::actionPerformed( GUIComponent *inTarget ) {
 
 void ValueSlider::draw() {
     
-    setDrawColor( 1, 1, 1, 1 );
+    setDrawColor( 0.5, 0.5, 0.5, 1 );
+	if ( mPointerDown ) setDrawColor( 1, 1, 1, 1 );
     
     drawRect( mBarStartX, mBarStartY, 
               mBarEndX, mBarEndY );

@@ -61,6 +61,8 @@ void TextButton::drawContents() {
     
     doublePair textPos = { 0, 0 };
     
+	if ( !isMouseOver() ) setDrawColor( 0.5, 0.5, 0.5, 1 );
+	
     mFont->drawString( mLabelText, textPos, alignCenter );
     }
 
