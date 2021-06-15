@@ -32,17 +32,23 @@ SettingsPage::SettingsPage()
           mFullscreenBox( 0, 128, 4 ),
           mBorderlessBox( 0, 168, 4 ),
           mEnableNudeBox( -335, 148, 4 ),
-          mMusicLoudnessSlider( mainFont, 0, 40, 4, 200, 30,
+          mMusicLoudnessSlider( mainFont, 0, 300, 4, 200, 30, //0, 40
                                 0.0, 1.0, 
                                 translate( "musicLoudness" ) ),
-          mSoundEffectsLoudnessSlider( mainFont, 0, -48, 4, 200, 30,
+          mSoundEffectsLoudnessSlider( mainFont, 0, 248, 4, 200, 30, //0, -48
                                        0.0, 1.0, 
                                        translate( "soundLoudness" ) ),
-          mSpawnSeed( mainFont, 226, -150, 14, false, 
-                                     translate( "spawnSeed" ),
+          mUseCustomServerBox( -168, -148, 4 ),
+          mCustomServerAddressField( mainFont, 456, -142, 14, false, //306, -150
+                                     translate( "address" ),
                                      NULL,
                                      // forbid spaces
                                      " " ),
+          mCustomServerPortField( mainFont, 234, -202, 4, false, //84, -208
+                                  translate( "port" ),
+                                  "0123456789", NULL ),
+          mCopyButton( mainFont, 381, -216, translate( "copy" ) ),
+          mPasteButton( mainFont, 518, -216, translate( "paste" ) ),
           mCursorScaleSlider( mainFont, 297, 155, 4, 200, 30,
                                        1.0, 10.0, 
                                        translate( "scale" ) ) {
@@ -57,7 +63,7 @@ SettingsPage::SettingsPage()
         new RadioButtonSet( mainFont, 561, 275,
                             3, choiceList,
                             false, 4 );
-    addComponent( mCursorModeSet );
+    // addComponent( mCursorModeSet );
     mCursorModeSet->addActionListener( this );
 
     addComponent( &mCursorScaleSlider );
@@ -78,7 +84,7 @@ SettingsPage::SettingsPage()
     addComponent( &mBackButton );
     mBackButton.addActionListener( this );
 
-    addComponent( &mEditAccountButton );
+    // addComponent( &mEditAccountButton );
     mEditAccountButton.addActionListener( this );
 
     addComponent( &mFullscreenBox );
@@ -96,7 +102,17 @@ SettingsPage::SettingsPage()
     addComponent( &mRedetectButton );
     mRedetectButton.addActionListener( this );
 
-    addComponent( &mSpawnSeed);
+    addComponent( &mUseCustomServerBox );
+    addComponent( &mCustomServerAddressField );
+    addComponent( &mCustomServerPortField );
+    
+	mCustomServerAddressField.usePasteShortcut( true );
+	
+    // addComponent( &mCopyButton );
+    // addComponent( &mPasteButton );
+    
+    mCopyButton.addActionListener( this );
+    mPasteButton.addActionListener( this );
     
     mRestartButton.setVisible( false );
     
@@ -172,6 +188,7 @@ void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
         SettingsManager::setSetting( "fullscreen", newSetting );
         
         mRestartButton.setVisible( mOldFullscreenSetting != newSetting );
+		mRestartButton.setPosition( 182, mFullscreenBox.getPosition().y );
         
         mBorderlessBox.setVisible( newSetting );
         }
@@ -181,6 +198,7 @@ void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
         SettingsManager::setSetting( "borderless", newSetting );
         
         mRestartButton.setVisible( mOldBorderlessSetting != newSetting );
+		mRestartButton.setPosition( 182, mBorderlessBox.getPosition().y );
         }
 	else if( inTarget == &mEnableNudeBox ) {
         int newSetting = mEnableNudeBox.getToggled();
@@ -188,6 +206,7 @@ void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
         SettingsManager::setSetting( "nudeEnabled", newSetting );
         
         mRestartButton.setVisible( mEnableNudeSetting != newSetting );
+		mRestartButton.setPosition( 182, mEnableNudeBox.getPosition().y );
         }
     else if( inTarget == &mRestartButton ||
              inTarget == &mRedetectButton ) {
@@ -269,7 +288,18 @@ extern int targetFramesPerSecond;
 
 void SettingsPage::draw( doublePair inViewCenter, 
                          double inViewSize ) {
-    setDrawColor( 1, 1, 1, 1 );
+    setDrawColor( 0.5, 0.5, 0.5, 1 );
+	
+	mFullscreenBox.setPosition( -38, 40 );
+	mBorderlessBox.setPosition( -38, -20 );
+	mEnableNudeBox.setPosition( -38, -80 );
+	mUseCustomServerBox.setPosition( -38, -140 );
+	
+	mRedetectButton.setPosition( 182, 198 );
+	
+	mCustomServerAddressField.setVisible( mUseCustomServerBox.getToggled() );
+	mCustomServerPortField.setVisible( mUseCustomServerBox.getToggled() );
+	
     
     doublePair pos = mFullscreenBox.getPosition();
     
@@ -291,7 +321,7 @@ void SettingsPage::draw( doublePair inViewCenter,
 
     pos = mFullscreenBox.getPosition();
     
-    pos.y += 96;
+    pos.y += 52;
     pos.x -= 16;
     
     if( getCountingOnVsync() ) {
@@ -301,7 +331,7 @@ void SettingsPage::draw( doublePair inViewCenter,
         mainFont->drawString( translate( "vsyncNo" ), pos, alignLeft );
         }
     
-    pos.y += 44;
+    pos.y += 52;
 
     char *fpsString = autoSprintf( "%d", targetFramesPerSecond );
     
@@ -309,7 +339,7 @@ void SettingsPage::draw( doublePair inViewCenter,
     delete [] fpsString;
 
 
-    pos.y += 44;
+    pos.y += 52;
 
     char *currentFPSString = autoSprintf( "%.2f", getRecentFrameRate() );
     
@@ -320,11 +350,11 @@ void SettingsPage::draw( doublePair inViewCenter,
     pos = mFullscreenBox.getPosition();
     pos.x -= 30;
 
-    pos.y += 96;
+    pos.y += 52;
     mainFont->drawString( translate( "vsyncOn" ), pos, alignRight );
-    pos.y += 44;
+    pos.y += 52;
     mainFont->drawString( translate( "targetFPS" ), pos, alignRight );
-    pos.y += 44;
+    pos.y += 52;
     mainFont->drawString( translate( "currentFPS" ), pos, alignRight );
 
 
@@ -333,13 +363,13 @@ void SettingsPage::draw( doublePair inViewCenter,
     pos.x -= 30;
     pos.y -= 2;
 
-    mainFont->drawString( "Enable Nudity", pos, alignRight );
+    mainFont->drawString( "Enable Nudity:", pos, alignRight );
 
 
     pos = mCursorModeSet->getPosition();
     
     pos.y += 37;
-    mainFont->drawString( translate( "cursor"), pos, alignRight );
+    // mainFont->drawString( translate( "cursor"), pos, alignRight );
     
     if( mCursorScaleSlider.isVisible() ) {
         
