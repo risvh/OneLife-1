@@ -149,7 +149,7 @@ scale "SCALE:"
 useCustomServer "USE CUSTOM SERVER:"
 address "ADDRESS:"
 port "PORT:"
-spawnSeed "SPAWN SEED:"
+
 
 
 downloadingUpdate "DOWNLOADING UPDATE"

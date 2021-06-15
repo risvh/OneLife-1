@@ -77,6 +77,8 @@ SettingsPage::SettingsPage()
     setButtonStyle( &mEditAccountButton );
     setButtonStyle( &mRestartButton );
     setButtonStyle( &mRedetectButton );
+    setButtonStyle( &mCopyButton );
+    setButtonStyle( &mPasteButton );
 
 	addComponent( &mInfoSeeds);
 	mInfoSeeds.addActionListener( this );
@@ -114,6 +116,17 @@ SettingsPage::SettingsPage()
     mCopyButton.addActionListener( this );
     mPasteButton.addActionListener( this );
     
+    addComponent( &mCopyButton );
+    addComponent( &mPasteButton );
+    
+    mCopyButton.addActionListener( this );
+    mPasteButton.addActionListener( this );
+    
+    if( ! isClipboardSupported() ) {
+        mCopyButton.setVisible( false );
+        mPasteButton.setVisible( false );
+        }
+
     mRestartButton.setVisible( false );
     
     mOldFullscreenSetting = 
@@ -162,10 +175,19 @@ SettingsPage::~SettingsPage() {
 void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
     if( inTarget == &mBackButton ) {
         
-        char *seedList = mSpawnSeed.getAndUpdateList();
+        int useCustomServer = 0;
+        if( mUseCustomServerBox.getToggled() ) {
+            useCustomServer = 1;
+            }
         
-        SettingsManager::setSetting( "spawnSeed", seedList );
-        delete [] seedList;
+        SettingsManager::setSetting( "useCustomServer", useCustomServer );
+        char *address = mCustomServerAddressField.getText();
+        
+        SettingsManager::setSetting( "customServerAddress", address );
+        delete [] address;
+        
+        SettingsManager::setSetting( "customServerPort",
+                                     mCustomServerPortField.getInt() );
         
         setSignal( "back" );
         setMusicLoudness( 0 );
@@ -266,6 +288,65 @@ void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
             setMusicLoudness( mMusicLoudnessSlider.getValue(), true );
             }
         }
+    else if( inTarget == &mCopyButton ) {
+        char *address = mCustomServerAddressField.getText();
+        
+        char *fullAddress = autoSprintf( "%s:%d", address,
+                                         mCustomServerPortField.getInt() );
+        delete [] address;
+        
+        setClipboardText( fullAddress );
+        
+        delete [] fullAddress;
+        }
+    else if( inTarget == &mPasteButton ) {
+        char *text = getClipboardText();
+
+        char *trimmed = trimWhitespace( text );
+        
+        delete [] text;
+        
+
+        char setWithPort = false;
+        
+        if( strstr( trimmed, ":" ) != NULL ) {
+            char addressBuff[100];
+            int port = 0;
+            
+            int numRead = sscanf( trimmed, "%99[^:]:%d", addressBuff, &port );
+            
+            if( numRead == 2 ) {
+                setWithPort = true;
+                
+                char *trimmedAddr = trimWhitespace( addressBuff );
+                
+                // terminate at first space, if any
+                char *spacePos = strstr( trimmedAddr, " " );
+                if( spacePos != NULL ) {
+                    spacePos[0] = '\0';
+                    }
+
+                mCustomServerAddressField.setText( trimmedAddr );
+
+                delete [] trimmedAddr;
+                
+                mCustomServerPortField.setInt( port );
+                }
+            }
+        
+        if( ! setWithPort ) {
+            // treat the whole thing as an address
+            
+            // terminate at first space, if any
+            char *spacePos = strstr( trimmed, " " );
+            
+            if( spacePos != NULL ) {
+                spacePos[0] = '\0';
+                }
+            mCustomServerAddressField.setText( trimmed );
+            }
+        delete [] trimmed;
+        }
     else if( inTarget == mCursorModeSet ) {
         setCursorMode( mCursorModeSet->getSelectedItem() );
         
@@ -308,6 +389,14 @@ void SettingsPage::draw( doublePair inViewCenter,
     
     mainFont->drawString( translate( "fullscreen" ), pos, alignRight );
 
+
+    pos = mUseCustomServerBox.getPosition();
+    
+    pos.x -= 30;
+    pos.y -= 2;
+    
+    mainFont->drawString( translate( "useCustomServer" ), pos, alignRight );
+    
 
     if( mBorderlessBox.isVisible() ) {
         pos = mBorderlessBox.getPosition();
@@ -408,13 +497,22 @@ void SettingsPage::makeActive( char inFresh ) {
         mCursorScaleSlider.setValue( getEmulatedCursorScale() );
 
 
-        char *seed = 
-            SettingsManager::getSettingContents( "spawnSeed",
-                                               "" );
+        int useCustomServer = 
+            SettingsManager::getIntSetting( "useCustomServer", 0 );
         
-        mSpawnSeed.setList( seed );
+        mUseCustomServerBox.setToggled( useCustomServer );
         
-        delete [] seed;
+
+        char *address = 
+            SettingsManager::getStringSetting( "customServerAddress",
+                                               "localhost" );
+        
+        int port = SettingsManager::getIntSetting( "customServerPort", 8005 );
+        
+        mCustomServerAddressField.setText( address );
+        mCustomServerPortField.setInt( port );
+        
+        delete [] address;
         
 
 
