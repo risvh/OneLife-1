@@ -80,7 +80,7 @@ SettingsPage::SettingsPage()
     setButtonStyle( &mCopyButton );
     setButtonStyle( &mPasteButton );
 
-	addComponent( &mInfoSeeds);
+	// addComponent( &mInfoSeeds);
 	mInfoSeeds.addActionListener( this );
 
     addComponent( &mBackButton );
@@ -112,12 +112,6 @@ SettingsPage::SettingsPage()
 	
     // addComponent( &mCopyButton );
     // addComponent( &mPasteButton );
-    
-    mCopyButton.addActionListener( this );
-    mPasteButton.addActionListener( this );
-    
-    addComponent( &mCopyButton );
-    addComponent( &mPasteButton );
     
     mCopyButton.addActionListener( this );
     mPasteButton.addActionListener( this );

@@ -131,7 +131,7 @@ ExistingAccountPage::ExistingAccountPage()
     addComponent( &mFriendsButton );
     addComponent( &mGenesButton );
     addComponent( &mFamilyTreesButton );
-    addComponent( &mTechTreeButton );
+    // addComponent( &mTechTreeButton );
     // addComponent( &mClearAccountButton );
     // addComponent( &mCancelButton );
     addComponent( &mSettingsButton );
@@ -683,15 +683,15 @@ void ExistingAccountPage::keyDown( unsigned char inASCII ) {
 		
 		processLogin( true, "done" );
         
-        if( mKeyField.isFocused() ) {
+        // if( mKeyField.isFocused() ) {
 
-            processLogin( true, "done" );
+            // processLogin( true, "done" );
             
-            return;
-            }
-        else if( mEmailField.isFocused() ) {
-            switchFields();
-            }
+            // return;
+            // }
+        // else if( mEmailField.isFocused() ) {
+            // switchFields();
+            // }
         }
     }
 
