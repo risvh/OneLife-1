@@ -392,7 +392,7 @@ void ExistingAccountPage::step() {
 	
 	if ( mEmailField.isFocused() || mKeyField.isFocused() ) {
 		setToolTip( translate( "getAccountTip" ) );
-	} else {
+	} else if ( !mLoginButton.isMouseOver() ) {
 		clearToolTip( translate( "getAccountTip" ) );
 	}
 	
