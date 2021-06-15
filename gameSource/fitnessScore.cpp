@@ -445,6 +445,50 @@ void drawFitnessScore( doublePair inPos, char inMoreDigits ) {
         stepActiveRequest();
         }
     }
+	
+	
+char *getFitnessScoreMessage( char inMoreDigits ) {
+    if( !useFitnessServer ) {
+        return NULL;
+        }
+
+    if( score != -1 ) {        
+        
+        const char *rankSuffix = getRankSuffix();        
+
+        char *scoreString;
+        
+        if( inMoreDigits ) {
+            scoreString = autoSprintf( "%0.2f", score );
+            }
+        else {
+            scoreString = autoSprintf( "%0.1f", score );
+            }
+        
+        char *message;
+
+        if( rank != 0 ) {
+            message = 
+                autoSprintf( translate( "scoreMessage" ), 
+                             scoreString, rank, rankSuffix );
+            }
+        else {
+            // no rank
+            message = 
+                autoSprintf( translate( "scoreMessageNoRank" ), 
+                             scoreString );
+            }
+        
+        delete [] scoreString;
+
+		return message;
+		
+        }
+    else {
+        stepActiveRequest();
+		return NULL;
+        }
+    }
 
 
 

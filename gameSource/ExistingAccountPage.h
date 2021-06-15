@@ -3,6 +3,7 @@
 #include "TextField.h"
 #include "TextButton.h"
 #include "KeyEquivalentTextButton.h"
+#include "DropdownList.h"
 
 
 #include "minorGems/ui/event/ActionListener.h"
@@ -50,6 +51,9 @@ class ExistingAccountPage : public GamePage, public ActionListener {
         
         TextField mEmailField;
         TextField mKeyField;
+		
+		DropdownList mSpawnSeed;
+		bool seedboxWasFocused;
 
         TextField *mFields[2];
 
@@ -85,7 +89,8 @@ class ExistingAccountPage : public GamePage, public ActionListener {
 
         char mHideAccount;
 
-        void switchFields();
+        void switchFieldsDown();
+		void switchFieldsUp();
         
         void processLogin( char inStore, const char *inSignal );
 
