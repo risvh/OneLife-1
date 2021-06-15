@@ -40,7 +40,8 @@ categoriesRebuild "CATEGORIES##(REBUILDING CACHE)"
 
 
 email "EMAIL:"
-username "USERNAME:"
+username "NAME:"
+spawnSeed "SEED:"
 atSignTip "INSERT '@' SIGN (INTL KEYBOARDS)"
 
 
