@@ -42,7 +42,7 @@ extern char loginEditOverride;
 
 ExistingAccountPage::ExistingAccountPage()
         : mEmailField( mainFont, 230, 144, 13, false,
-                       translate( "username" ),
+                       translate( "NAME:" ),
                        NULL,
                        // forbid only spaces and backslash and 
                        // single/double quotes 
@@ -52,7 +52,7 @@ ExistingAccountPage::ExistingAccountPage()
                      // allow only ticket code characters
                      "23456789ABCDEFGHJKLMNPQRSTUVWXYZ-" ),
           mSpawnSeed( mainFont, 230, 0, 13, false, 
-                                     translate( "spawnSeed" ),
+                                     translate( "SEED:" ),
                                      NULL,
                                      // forbid spaces
                                      " " ),
