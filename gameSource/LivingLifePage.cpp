@@ -11140,6 +11140,8 @@ void LivingLifePage::draw( doublePair inViewCenter,
         timeMeasures[2] += game_getCurrentTime() - drawStartTime;
         }
     
+	setDrawColor( 0, 0, 0, 0.1 );
+	drawRect( lastScreenViewCenter, 640*HetuwMod::zoomScale, 360*HetuwMod::zoomScale );
     }
 
 
