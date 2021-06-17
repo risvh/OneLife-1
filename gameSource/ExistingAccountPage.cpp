@@ -298,6 +298,7 @@ void ExistingAccountPage::makeActive( char inFresh ) {
         
         mEmailField.setContentsHidden( true );
         mKeyField.setContentsHidden( true );
+		mSpawnSeed.setContentsHidden( true );
         
         char *url = SettingsManager::getStringSetting( "lineageServerURL", "" );
 

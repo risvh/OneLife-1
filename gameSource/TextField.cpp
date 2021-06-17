@@ -318,19 +318,14 @@ void TextField::draw() {
     
     setDrawColor( 1, 1, 1, 1 );
 
-    if( mContentsHidden && mHiddenSprite != NULL ) {
-        // startAddingToStencil( false, true );
-
-        // drawRect( rectStartX, rectStartY,
-                  // rectEndX, rectEndY );
-        // startDrawingThroughStencil();
-        
-        doublePair pos = { 0, 0 };
-        
-        // drawSprite( mHiddenSprite, pos );
-        
-        // stopStencil();
-        }
+	if( mContentsHidden ) {
+		char *coverText = "  -  ";
+		double textWidth = mFont->measureString( coverText );
+		doublePair textPos = { rectStartX + textWidth / 2, 0 };
+		setDrawColor( 0.5, 0.5, 0.5, 1 );
+		mFont->drawString( coverText, textPos, alignLeft );
+		delete [] coverText;
+	}
     
 
 
