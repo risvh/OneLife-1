@@ -23,6 +23,8 @@ class SettingsPage : public GamePage, public ActionListener {
 
         virtual void draw( doublePair inViewCenter, 
                            double inViewSize );
+        virtual void darkModeDraw( doublePair inViewCenter, 
+                           double inViewSize );
 
         virtual void step();
 
@@ -31,12 +33,15 @@ class SettingsPage : public GamePage, public ActionListener {
         
         virtual void makeActive( char inFresh );
         virtual void makeNotActive();
+		virtual void updateOnDarkMode();
 
     protected:
         
         int mOldFullscreenSetting;
         int mOldBorderlessSetting;
         int mEnableNudeSetting;
+		int mUseDarkModeSetting;
+		int mOldUseDarkModeSetting;
         
         SoundUsage mTestSound;
 
@@ -57,6 +62,15 @@ class SettingsPage : public GamePage, public ActionListener {
         ValueSlider mSoundEffectsLoudnessSlider;
 
 
+        CheckboxButton mUseCustomServerBox;
+        
+        TextField mCustomServerAddressField;
+        TextField mCustomServerPortField;
+
+        TextButton mCopyButton;
+        TextButton mPasteButton;
+
+
         DropdownList mSpawnSeed;
 
         RadioButtonSet *mCursorModeSet;
@@ -64,5 +78,6 @@ class SettingsPage : public GamePage, public ActionListener {
         ValueSlider mCursorScaleSlider;
         
         CheckboxButton mEnableNudeBox;
+		CheckboxButton mUseDarkModeBox;
 
     };
