@@ -10,6 +10,8 @@
 #include "minorGems/util/SimpleVector.h"
 #include "minorGems/graphics/openGL/KeyboardHandlerGL.h"
 
+extern bool useDarkMode;
+
 
 
 // start:  none focused
@@ -32,6 +34,7 @@ TextField::TextField( Font *inDisplayFont,
         : PageComponent( inX, inY ),
           mActive( true ), 
           mContentsHidden( false ),
+		  mContentsWasHidden( false ),
           mHiddenSprite( loadSprite( "hiddenFieldTexture.tga", false ) ),
           mFont( inDisplayFont ), 
           mCharsWide( inCharsWide ),
@@ -41,6 +44,11 @@ TextField::TextField( Font *inDisplayFont,
           mForceCaps( inForceCaps ),
           mLabelText( NULL ),
           mAllowedChars( NULL ), mForbiddenChars( NULL ),
+		  
+		  nearRightEdge( false ),
+		  mUseClearButton( false ),
+		  onClearButton( false ),
+		  
           mFocused( false ), mText( new char[1] ),
           mTextLen( 0 ),
           mCursorPosition( 0 ),
@@ -152,6 +160,7 @@ TextField::~TextField() {
 
 void TextField::setContentsHidden( char inHidden ) {
     mContentsHidden = inHidden;
+	mContentsWasHidden = inHidden;
     }
 
 
@@ -297,11 +306,12 @@ void TextField::draw() {
         setDrawColor( 0.5, 0.5, 0.5, 1 );
         }
     
-
-    drawRect( - mWide / 2, - mHigh / 2, 
-              mWide / 2, mHigh / 2 );
+	if ( !useDarkMode )
+		drawRect( - mWide / 2, - mHigh / 2, 
+				  mWide / 2, mHigh / 2 );
     
     setDrawColor( 0.25, 0.25, 0.25, 1 );
+	if ( useDarkMode ) setDrawColor( 0, 0, 0, 1 );
     double pixWidth = mCharWidth / 8;
 
 
@@ -318,19 +328,34 @@ void TextField::draw() {
     
     setDrawColor( 1, 1, 1, 1 );
 
-    if( mContentsHidden && mHiddenSprite != NULL ) {
-        startAddingToStencil( false, true );
+	if ( useDarkMode ) {
+		
+		if( mContentsHidden ) {
+			char *coverText = "  -  ";
+			double textWidth = mFont->measureString( coverText );
+			doublePair textPos = { rectStartX + textWidth / 2, 0 };
+			setDrawColor( 0.5, 0.5, 0.5, 1 );
+			mFont->drawString( coverText, textPos, alignLeft );
+			delete [] coverText;
+		}
+		
+	} else {
+		
+		if( mContentsHidden && mHiddenSprite != NULL ) {
+			startAddingToStencil( false, true );
 
-        drawRect( rectStartX, rectStartY,
-                  rectEndX, rectEndY );
-        startDrawingThroughStencil();
-        
-        doublePair pos = { 0, 0 };
-        
-        drawSprite( mHiddenSprite, pos );
-        
-        stopStencil();
-        }
+			drawRect( rectStartX, rectStartY,
+					  rectEndX, rectEndY );
+			startDrawingThroughStencil();
+			
+			doublePair pos = { 0, 0 };
+			
+			drawSprite( mHiddenSprite, pos );
+			
+			stopStencil();
+			}
+	
+	}
     
 
 
@@ -362,6 +387,9 @@ void TextField::draw() {
             }
         
         doublePair labelPos = { xPos, yPos };
+		
+		if ( useDarkMode )
+		if ( !isFocused() ) setDrawColor( 0.5, 0.5, 0.5, 1 );
         
         mFont->drawString( mLabelText, labelPos, a );
         }
@@ -497,6 +525,27 @@ void TextField::draw() {
         mDrawnTextX = textPos2.x;
         }
     
+	if ( mFocused ) {
+		
+		if( mUseClearButton && strcmp( mText, "" ) != 0 ) {
+			float pixWidth = mCharWidth / 8;
+			float buttonWidth = mFont->measureString( "x" ) + pixWidth * 2;
+			float buttonRightOffset = buttonWidth / 2 + pixWidth * 2;
+			doublePair lineDeleteButtonPos = { mWide / 2 - buttonRightOffset, 0 };
+			if ( onClearButton && !useDarkMode ) {
+				setDrawColor( 0, 0, 0, 0.5 );
+				drawRect( 
+					lineDeleteButtonPos.x - buttonWidth / 2, 
+					lineDeleteButtonPos.y - buttonWidth / 2, 
+					lineDeleteButtonPos.x + buttonWidth / 2, 
+					lineDeleteButtonPos.y + buttonWidth / 2 );
+			}
+			setDrawColor( 1, 1, 1, 1 );
+			if ( useDarkMode && !onClearButton ) setDrawColor( 0.5, 0.5, 0.5, 1 );
+			mFont->drawString( "x", lineDeleteButtonPos, alignCenter );
+		}
+		
+	}
 
     double shadeWidth = 4 * mCharWidth;
     
@@ -566,6 +615,7 @@ void TextField::draw() {
         delete [] beforeCursorText;
         
         setDrawColor( 0, 0, 0, 0.5 );
+		if ( useDarkMode ) setDrawColor( 0.5, 0.5, 0.5, 1 );
         
         drawRect( textPos.x + cursorXOffset, 
                   rectStartY - pixWidth,
@@ -584,6 +634,33 @@ void TextField::draw() {
 
     delete [] textBeforeCursorBase;
     delete [] textAfterCursorBase;
+    }
+
+
+char TextField::isNearRightEdge( float inX, float inY ) {
+	float pixWidth = mCharWidth / 8;
+	float buttonWidth = mFont->measureString( "x" ) + pixWidth * 2;
+	float buttonRightOffset = buttonWidth / 2 + pixWidth * 2;
+    return inX > 0 && 
+		fabs( inX - ( mWide / 2 - buttonRightOffset ) ) < buttonWidth / 2;
+    }
+	
+
+char TextField::isInside( float inX, float inY ) {
+    return fabs( inX ) < mWide / 2 &&
+        fabs( inY ) < mHigh / 2;
+    }
+
+
+void TextField::pointerMove( float inX, float inY ) {
+	nearRightEdge = isNearRightEdge( inX, inY );
+	onClearButton = isInside( inX, inY ) && nearRightEdge;
+    }
+
+
+void TextField::pointerDown( float inX, float inY ) {
+	if( !isInside( inX, inY ) ) unfocus();
+	if( isInside( inX, inY ) && nearRightEdge && mFocused ) setText( "" );
     }
 
 
@@ -856,6 +933,12 @@ void TextField::keyDown( unsigned char inASCII ) {
                     }
                 }
             }
+			
+        if( mUsePasteShortcut && inASCII + 64 == toupper('c') )  {
+			char *text = getText();
+			setClipboardText( text );
+			delete [] text;
+			}
 
         // but ONLY if it's an alphabetical key (A-Z,a-z)
         // Some international keyboards use ALT to type certain symbols
@@ -1197,7 +1280,9 @@ void TextField::unfocus() {
         if( mFireOnLeave ) {
             fireActionPerformed( this );
             }
-        }    
+        }
+	
+	mContentsHidden = mContentsWasHidden;
     }
 
 
@@ -1382,6 +1467,11 @@ void TextField::setShiftArrowsCanSelect( char inCanSelect ) {
 
 void TextField::usePasteShortcut( char inShortcutOn ) {
     mUsePasteShortcut = inShortcutOn;
+    }
+	
+	
+void TextField::useClearButton( char inClearButtonOn ) {
+    mUseClearButton = inClearButtonOn;
     }
 
 

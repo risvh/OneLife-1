@@ -6,6 +6,8 @@
 
 static int baseCheckboxSep = 6;
 
+extern bool useDarkMode;
+
 
 RadioButtonSet::RadioButtonSet( Font *inDisplayFont, double inX, double inY,
                                 int inNumItems, const char **inItemNames,
@@ -109,6 +111,7 @@ void RadioButtonSet::actionPerformed( GUIComponent *inTarget ) {
 
 void RadioButtonSet::draw() {
     setDrawColor( 1, 1, 1, 1 );
+	if ( useDarkMode ) setDrawColor( 0.5, 0.5, 0.5, 1 );
 
     double sep = -mCheckboxSep;
     

@@ -221,6 +221,8 @@ double musicHeadroom = 1.0;
 int musicOff = 0;
 float musicLoudness;
 
+bool useDarkMode;
+
 int webRetrySeconds;
 
 
@@ -385,6 +387,8 @@ char *getCustomRecordedGameData() {
         SettingsManager::getIntSetting( "musicOff", 0 );
     float musicLoudnessSetting = 
         SettingsManager::getFloatSetting( "musicLoudness", 1.0f );
+		
+	useDarkMode = SettingsManager::getIntSetting( "useDarkMode", 0 );
     
     int webRetrySecondsSetting = 
         SettingsManager::getIntSetting( "webRetrySeconds", 10 );

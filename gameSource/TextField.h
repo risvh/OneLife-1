@@ -120,6 +120,9 @@ class TextField : public PageComponent, public ActionListenerList {
         
         // defaults to off
         void usePasteShortcut( char inShortcutOn );
+		
+        // defaults to off
+        void useClearButton( char inClearButtonOn );
         
 
         
@@ -131,8 +134,12 @@ class TextField : public PageComponent, public ActionListenerList {
         virtual void step();
         
         virtual void draw();
+		
+		virtual char isInside( float inX, float inY );
 
-        virtual void pointerUp( float inX, float inY );
+        virtual void pointerMove( float inX, float inY );
+        virtual void pointerDown( float inX, float inY );
+		virtual void pointerUp( float inX, float inY );
 
         virtual void keyDown( unsigned char inASCII );
         virtual void keyUp( unsigned char inASCII );
@@ -167,6 +174,7 @@ class TextField : public PageComponent, public ActionListenerList {
     protected:
         char mActive;
         char mContentsHidden;
+		char mContentsWasHidden;
         
         SpriteHandle mHiddenSprite;
         
@@ -184,6 +192,11 @@ class TextField : public PageComponent, public ActionListenerList {
         
         char *mAllowedChars;
         char *mForbiddenChars;
+		
+		bool nearRightEdge;
+		char isNearRightEdge( float inX, float inY );
+		bool mUseClearButton;
+		bool onClearButton;
 
         
         double mWide, mHigh;

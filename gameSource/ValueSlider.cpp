@@ -4,6 +4,8 @@
 
 #include "minorGems/game/drawUtils.h"
 
+extern bool useDarkMode;
+
 
 
 ValueSlider::ValueSlider( Font *inDisplayFont, 
@@ -156,6 +158,13 @@ void ValueSlider::actionPerformed( GUIComponent *inTarget ) {
 void ValueSlider::draw() {
     
     setDrawColor( 1, 1, 1, 1 );
+	if ( useDarkMode ) {
+		setFillColor( {0.5, 0.5, 0.5, 1} );
+		setDrawColor( 0.5, 0.5, 0.5, 1 );
+		if ( mPointerDown ) setDrawColor( 1, 1, 1, 1 );
+	} else {
+		setFillColor( {0.8, 0.8, 0, 1} );
+	}
     
     drawRect( mBarStartX, mBarStartY, 
               mBarEndX, mBarEndY );

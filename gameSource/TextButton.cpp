@@ -2,6 +2,8 @@
 
 #include "minorGems/util/stringUtils.h"
 
+extern bool useDarkMode;
+
 
 
 TextButton::TextButton( Font *inDisplayFont, 
@@ -60,6 +62,9 @@ void TextButton::drawContents() {
     // leave draw color set by Button
     
     doublePair textPos = { 0, 0 };
+	
+	if ( useDarkMode )
+		if ( !isMouseOver() ) setDrawColor( 0.5, 0.5, 0.5, 1 );
     
     mFont->drawString( mLabelText, textPos, alignCenter );
     }

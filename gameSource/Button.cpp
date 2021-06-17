@@ -6,6 +6,8 @@
 
 #include <math.h>
 
+extern bool useDarkMode;
+
 
 Button::Button( double inX, double inY,
                 double inWide, double inHigh,
@@ -141,6 +143,7 @@ void Button::draw() {
             }
         else {
             setDrawColor( mFillColor );
+			if ( useDarkMode ) setDrawColor( 0, 0, 0, 1 );
             }
     
         double rectStartX = - mWide / 2 + mPixWidth;
@@ -162,6 +165,7 @@ void Button::draw() {
         }
     else {
         setDrawColor( mNoHoverColor );
+		if ( useDarkMode ) setDrawColor( 0.5, 0.5, 0.5, 1 );
         }
 
 
@@ -191,6 +195,9 @@ void Button::drawContents() {
 
 void Button::drawBorder() {
     if( mBracketCoverLength >= 0 ) {
+		
+		if ( useDarkMode ) return;
+		
         // one rect on either end
         drawRect( - mWide / 2, 
                   - mHigh / 2, 

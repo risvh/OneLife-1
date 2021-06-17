@@ -114,6 +114,9 @@ class DropdownList : public PageComponent, public ActionListenerList {
         
         // defaults to off
         void usePasteShortcut( char inShortcutOn );
+		
+        // defaults to off
+        void useClearButton( char inClearButtonOn );
         
 
         
@@ -163,6 +166,7 @@ class DropdownList : public PageComponent, public ActionListenerList {
     protected:
         char mActive;
         char mContentsHidden;
+		char mContentsWasHidden;
         
         SpriteHandle mHiddenSprite;
         
@@ -204,6 +208,8 @@ class DropdownList : public PageComponent, public ActionListenerList {
 		char isInsideTextBox( float inX, float inY );
 		bool nearRightEdge;
 		char isNearRightEdge( float inX, float inY );
+		bool mUseClearButton;
+		bool onClearButton;
         
         int mCursorPosition;
         
