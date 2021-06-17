@@ -38,10 +38,12 @@ extern SpriteHandle instructionsSprite;
 
 extern char loginEditOverride;
 
+extern bool useDarkMode;
+
 
 
 ExistingAccountPage::ExistingAccountPage()
-        : mEmailField( mainFont, 0, 128, 10, false, 
+        : mEmailField( mainFont, 0, 128, 13, false, 
                        translate( "username" ),
                        NULL,
                        // forbid only spaces and backslash and 
@@ -51,6 +53,12 @@ ExistingAccountPage::ExistingAccountPage()
                      translate( "accountKey" ),
                      // allow only ticket code characters
                      "23456789ABCDEFGHJKLMNPQRSTUVWXYZ-" ),
+          mSpawnSeed( mainFont, 230, 0, 13, false, 
+                                     translate( "spawnSeed" ),
+                                     NULL,
+                                     // forbid spaces
+                                     " " ),
+          seedboxWasFocused( false ),
           mAtSignButton( mainFont, 252, 128, "@" ),
           mPasteButton( mainFont, 0, -60, translate( "paste" ), 'v', 'V' ),
           mPasteEmailButton( mainFont, 0, 68, translate( "paste" ), 'v', 'V' ),
@@ -138,6 +146,8 @@ ExistingAccountPage::ExistingAccountPage()
 
     addComponent( &mViewAccountButton );
     addComponent( &mTutorialButton );
+	
+	addComponent( &mSpawnSeed);
     
     mLoginButton.addActionListener( this );
     mFriendsButton.addActionListener( this );
@@ -287,6 +297,7 @@ void ExistingAccountPage::makeActive( char inFresh ) {
         
         mEmailField.setContentsHidden( true );
         mKeyField.setContentsHidden( true );
+		mSpawnSeed.setContentsHidden( true );
         
         char *url = SettingsManager::getStringSetting( "lineageServerURL", "" );
 
@@ -299,7 +310,11 @@ void ExistingAccountPage::makeActive( char inFresh ) {
     delete [] emailText;
     delete [] keyText;
 
+	char *seedList = SettingsManager::getSettingContents( "spawnSeed", "" );
+	mSpawnSeed.setList( seedList );
+	delete [] seedList;
     
+	
     mPasteButton.setVisible( false );
     mPasteEmailButton.setVisible( false );
     mAtSignButton.setVisible( false );
@@ -352,7 +367,7 @@ void ExistingAccountPage::makeActive( char inFresh ) {
         mViewAccountButton.setVisible( false );
         }
 		
-	mReviewButton.setVisible( false );
+	updateOnDarkMode();
     }
 
 
@@ -366,16 +381,31 @@ void ExistingAccountPage::makeNotActive() {
 
 
 void ExistingAccountPage::step() {
-    mPasteButton.setVisible( isClipboardSupported() &&
-                             mKeyField.isFocused() );
-    mPasteEmailButton.setVisible( isClipboardSupported() &&
-                                  mEmailField.isFocused() );
-    // mAtSignButton.setVisible( mEmailField.isFocused() );
+	
+	if ( useDarkMode ) {
+		darkModeStep();
+	} else {
+	
+		mPasteButton.setVisible( isClipboardSupported() &&
+								 mKeyField.isFocused() );
+		mPasteEmailButton.setVisible( isClipboardSupported() &&
+									  mEmailField.isFocused() );
+		// mAtSignButton.setVisible( mEmailField.isFocused() );
+	
+	}
+	
     }
 
 
 
 void ExistingAccountPage::actionPerformed( GUIComponent *inTarget ) {
+	
+	if ( mSpawnSeed.isVisible() ) {
+		char *seedList = mSpawnSeed.getAndUpdateList();
+		SettingsManager::setSetting( "spawnSeed", seedList );
+		delete [] seedList;
+	}
+	
     if( inTarget == &mLoginButton ) {
         processLogin( true, "done" );
         }
@@ -542,40 +572,97 @@ void ExistingAccountPage::switchFields() {
         mFields[0]->focus();
         }
     }
+	
+	
+	
+void ExistingAccountPage::switchFieldsDown() {
+    if( mFields[0]->isFocused() ) {
+        mFields[1]->focus();
+        }
+    else if( mFields[1]->isFocused() ) {
+        mSpawnSeed.focus();
+        }
+    else if( mSpawnSeed.isFocused() ) {
+        mFields[0]->focus();
+        }
+    }
+	
+void ExistingAccountPage::switchFieldsUp() {
+    if( mSpawnSeed.isFocused() ) {
+        mFields[1]->focus();
+        }
+    else if( mFields[0]->isFocused() ) {
+        mSpawnSeed.focus();
+        }
+    else if( mFields[1]->isFocused() ) {
+        mFields[0]->focus();
+        }
+    }
 
     
 
 void ExistingAccountPage::keyDown( unsigned char inASCII ) {
     if( inASCII == 9 ) {
         // tab
-        switchFields();
+		if ( useDarkMode ) {
+			switchFieldsDown();
+		} else {
+			switchFields();
+		}
         return;
         }
 
     if( inASCII == 10 || inASCII == 13 ) {
         // enter key
-        
-        if( mKeyField.isFocused() ) {
+		
+		if ( useDarkMode ) {
+			
+			if ( mSpawnSeed.isVisible() ) {
+				char *seedList = mSpawnSeed.getAndUpdateList();
+				SettingsManager::setSetting( "spawnSeed", seedList );
+				delete [] seedList;
+			}
+			
+			processLogin( true, "done" );
+			
+		} else {
+			
+			if( mKeyField.isFocused() ) {
 
-            processLogin( true, "done" );
-            
-            return;
-            }
-        else if( mEmailField.isFocused() ) {
-            switchFields();
-            }
+				processLogin( true, "done" );
+				
+				return;
+				}
+			else if( mEmailField.isFocused() ) {
+				switchFields();
+				}
+				
+		}
         }
     }
 
 
 
 void ExistingAccountPage::specialKeyDown( int inKeyCode ) {
-    if( inKeyCode == MG_KEY_DOWN ||
-        inKeyCode == MG_KEY_UP ) {
-        
-        switchFields();
-        return;
-        }
+	if ( useDarkMode ) {
+		if( inKeyCode == MG_KEY_DOWN ) {
+			
+			switchFieldsDown();
+			return;
+			}
+		if( inKeyCode == MG_KEY_UP ) {
+			
+			switchFieldsUp();
+			return;
+			}
+	} else {
+		if( inKeyCode == MG_KEY_DOWN ||
+			inKeyCode == MG_KEY_UP ) {
+			
+			switchFields();
+			return;
+			}
+	}
     }
 
 
@@ -612,6 +699,10 @@ void ExistingAccountPage::processLogin( char inStore, const char *inSignal ) {
 void ExistingAccountPage::draw( doublePair inViewCenter, 
                                 double inViewSize ) {
     
+	if ( useDarkMode ) {
+		darkModeDraw( inViewCenter, inViewSize );
+		return;
+	}
     
     if( !mFPSMeasureDone ) {
         double timePassed = game_getCurrentTime() - mPageActiveStartTime;
@@ -773,3 +864,328 @@ void ExistingAccountPage::draw( doublePair inViewCenter,
         }
     }
 
+
+void ExistingAccountPage::updateOnDarkMode() {
+
+	if ( useDarkMode ) {
+
+		mEmailField.setPosition( 230, 144 );
+		mKeyField.setPosition( 230, 72 );
+		mSpawnSeed.setVisible( !SettingsManager::getIntSetting( "useSteamUpdate", 0 ) );
+		mLoginButton.setPosition( 0, -120 );
+		mFriendsButton.setPosition( 0, -200 );
+		mGenesButton.setPosition( 0, -440 );
+		mFamilyTreesButton.setPosition( 0, -420 );
+		mSettingsButton.setPosition( 0, -360 );
+		mTutorialButton.setPosition( 0, -280 );
+		
+		mEmailField.usePasteShortcut( true );
+		mKeyField.usePasteShortcut( true );
+		mSpawnSeed.usePasteShortcut( true );
+		
+		mEmailField.useClearButton( true );
+		mKeyField.useClearButton( true );
+		mSpawnSeed.useClearButton( true );
+		
+		mTechTreeButton.setVisible( false );
+		mClearAccountButton.setVisible( false );
+		mCancelButton.setVisible( false );
+		mPasteButton.setVisible( false );
+		mPasteEmailButton.setVisible( false );
+		mViewAccountButton.setVisible( false );
+		
+		mReviewButton.setVisible( false );
+		mAtSignButton.setVisible( false );
+
+	} else {
+
+		mEmailField.setPosition( 0, 128 );
+		mKeyField.setPosition( 0, 0 );
+		mSpawnSeed.setVisible( false );
+		mLoginButton.setPosition( 400, 0 );
+		mFriendsButton.setPosition( 400, -80 );
+		mGenesButton.setPosition( 550, 0 );
+		mFamilyTreesButton.setPosition( 320, -160 );
+		mSettingsButton.setPosition( -400, -120 );
+		mTutorialButton.setPosition( 522, 300 );
+		
+		mEmailField.usePasteShortcut( false );
+		mKeyField.usePasteShortcut( false );
+		mSpawnSeed.usePasteShortcut( false );
+		
+		mEmailField.useClearButton( false );
+		mKeyField.useClearButton( false );
+		
+		mTechTreeButton.setVisible( true );
+		mClearAccountButton.setVisible( true );
+		mCancelButton.setVisible( true );
+		// mPasteButton.setVisible( true );
+		// mPasteEmailButton.setVisible( true );
+		// mViewAccountButton.setVisible( true );
+		
+		mReviewButton.setVisible( false );
+		mAtSignButton.setVisible( false );
+		
+		if ( SettingsManager::getIntSetting( "useSteamUpdate", 0 ) ) mLoginButton.setMouseOverTip( translate( "saveTip" ) );
+		if ( !SettingsManager::getIntSetting( "useSteamUpdate", 0 ) ) mLoginButton.setMouseOverTip( translate( "getAccountTip" ) );
+		mGenesButton.setMouseOverTip( translate( "genesTip" ) );
+
+	}
+	
+}
+
+
+void ExistingAccountPage::darkModeDraw( doublePair inViewCenter, 
+                                double inViewSize ) {
+    
+    
+    if( !mFPSMeasureDone ) {
+        double timePassed = game_getCurrentTime() - mPageActiveStartTime;
+        double settleTime = 0.1;
+
+        if ( timePassed > settleTime ) {
+            mFramesCounted ++;
+            }
+        
+        if( timePassed > 1 + settleTime ) {
+            double fps = mFramesCounted / ( timePassed - settleTime );
+            int targetFPS = 
+                SettingsManager::getIntSetting( "targetFrameRate", -1 );
+            char fpsFailed = true;
+            
+            if( targetFPS != -1 ) {
+                
+                double diff = fabs( fps - targetFPS );
+                
+                if( diff / targetFPS > 0.1 ) {
+                    // more than 10% off
+
+                    fpsFailed = true;
+                    }
+                else {
+                    // close enough
+                    fpsFailed = false;
+                    }
+                }
+
+            if( !fpsFailed ) {
+                mLoginButton.setVisible( true );
+                
+                int pastSuccess = 
+                    SettingsManager::getIntSetting( "loginSuccess", 0 );
+                if( pastSuccess ) {
+                    mFriendsButton.setVisible( true );
+                    }
+                
+                triggerLifeTokenUpdate();
+                triggerFitnessScoreUpdate();
+                }
+            else {
+                // show error message
+                
+                char *message = autoSprintf( translate( "fpsErrorLogin" ),
+                                                        fps, targetFPS );
+                setStatusDirect( message, true );
+                delete [] message;
+
+                setStatusPositiion( true );
+                mRetryButton.setVisible( true );
+                mRedetectButton.setVisible( true );
+                }
+            
+
+            mFPSMeasureDone = true;
+            }
+        }
+    
+
+    // setDrawColor( 1, 1, 1, 1 );
+    
+
+    doublePair pos = { -9, -225 };
+    
+    // drawSprite( instructionsSprite, pos );
+
+
+    if( ! mEmailField.isVisible() ) {
+        char *email = mEmailField.getText();
+        
+        const char *transString = "email";
+        
+        char *steamSuffixPointer = strstr( email, "@steamgames.com" );
+        
+        char coverChar = 'x';
+
+        if( steamSuffixPointer != NULL ) {
+            // terminate it
+            steamSuffixPointer[0] ='\0';
+            transString = "steamID";
+            coverChar = 'X';
+            }
+
+        if( mHideAccount ) {
+            int len = strlen( email );
+            for( int i=0; i<len; i++ ) {
+                email[i] = coverChar;
+                }
+            if( len > 13 ) {
+                // truncate.  Don't overlap with GENETIC FITNESS
+                email[ 13 ] = '\0';
+                }
+            }
+        
+
+        char *s = autoSprintf( "%s  %s", translate( transString ), email );
+        
+        pos = mEmailField.getPosition();
+
+        // pos.x = -350;  
+		double width = mainFont->measureString( s );
+		pos.x = - width / 2;
+        setDrawColor( 0.5, 0.5, 0.5, 1 );
+        mainFont->drawString( s, pos, alignLeft );
+        
+        delete [] email;
+        delete [] s;
+        }
+
+    if( ! mKeyField.isVisible() ) {
+        char *key = mKeyField.getText();
+
+        if( mHideAccount ) {
+            int len = strlen( key );
+            for( int i=0; i<len; i++ ) {
+                if( key[i] != '-' ) {
+                    key[i] = 'X';
+                    }
+                }   
+            }
+
+        char *s = autoSprintf( "%s  %s", translate( "accountKey" ), key );
+        
+        pos = mKeyField.getPosition();
+        
+        // pos.x = -350;     
+		double width = mainFont->measureString( s );
+		pos.x = - width / 2;
+        setDrawColor( 0.5, 0.5, 0.5, 1 );
+        mainFont->drawString( s, pos, alignLeft );
+        
+        delete [] key;
+        delete [] s;
+        }
+    
+
+
+    pos = mEmailField.getPosition();
+    pos.y += 100;
+
+    if( mFPSMeasureDone && 
+        ! mRedetectButton.isVisible() &&
+        ! mDisableCustomServerButton.isVisible() ) {
+        
+		char *message = getTokenMessage();
+		if( message != NULL ) mLoginButton.setMouseOverTip( message );
+		delete [] message;
+        
+        pos = mEmailField.getPosition();
+        
+        pos.x = 
+            ( mTutorialButton.getPosition().x + 
+              mLoginButton.getPosition().x )
+            / 2;
+
+        pos.x -= 32;
+        
+		char *message2 = getFitnessScoreMessage( true );
+		mGenesButton.setMouseOverTip( message2 );
+		delete [] message2;
+
+        if( isFitnessScoreReady() ) {
+            mGenesButton.setVisible( true );
+            }
+        }
+    }
+
+
+void ExistingAccountPage::darkModeStep() {
+	
+	if ( mEmailField.isFocused() || mKeyField.isFocused() ) {
+		setToolTip( translate( "getAccountTip" ) );
+	} else if ( !mLoginButton.isMouseOver() ) {
+		clearToolTip( translate( "getAccountTip" ) );
+	}
+	
+	if ( seedboxWasFocused && !mSpawnSeed.isFocused() ) {
+		char *seedList = mSpawnSeed.getAndUpdateList();
+		SettingsManager::setSetting( "spawnSeed", seedList );
+		mSpawnSeed.setList( seedList );
+		delete [] seedList;
+	}
+	
+	seedboxWasFocused = mSpawnSeed.isFocused();
+	
+	if ( mSpawnSeed.isFocused() ) {
+		mLoginButton.setIgnoreEvents( true );
+		mFriendsButton.setIgnoreEvents( true );
+		mGenesButton.setIgnoreEvents( true );
+		mFamilyTreesButton.setIgnoreEvents( true );
+		mTechTreeButton.setIgnoreEvents( true );
+		mSettingsButton.setIgnoreEvents( true );
+		mTutorialButton.setIgnoreEvents( true );
+	} else {
+		mLoginButton.setIgnoreEvents( false );
+		mFriendsButton.setIgnoreEvents( false );
+		mGenesButton.setIgnoreEvents( false );
+		mFamilyTreesButton.setIgnoreEvents( false );
+		mTechTreeButton.setIgnoreEvents( false );
+		mSettingsButton.setIgnoreEvents( false );
+		mTutorialButton.setIgnoreEvents( false );
+		}
+	
+	doublePair pos = { 0, 0 };
+	double textFieldOffset = 230.0;
+	double textFieldSpacing = 72.0;
+	pos.x = pos.x + textFieldOffset;
+
+	if( mSpawnSeed.isVisible() ) {
+		mSpawnSeed.setPosition( pos.x, pos.y );
+		pos.y = pos.y + textFieldSpacing;
+	}
+	if( true ) { //mKeyField.isVisible() ) {
+		mKeyField.setPosition( pos.x, pos.y );
+		pos.y = pos.y + textFieldSpacing;
+	}
+	if( true ) { //mEmailField.isVisible() ) {
+		mEmailField.setPosition( pos.x, pos.y );
+		pos.y = pos.y + textFieldSpacing;
+	}
+
+	pos = { 0, -120 };
+	double textButtonSpacing = 80.0;
+
+	if( mLoginButton.isVisible() ) {
+		mLoginButton.setPosition( pos.x, pos.y );
+		pos.y = pos.y - textButtonSpacing;
+	}
+	if( mFriendsButton.isVisible() ) {
+		mFriendsButton.setPosition( pos.x, pos.y );
+		pos.y = pos.y - textButtonSpacing;
+	}
+	if( mTutorialButton.isVisible() ) {
+		mTutorialButton.setPosition( pos.x, pos.y );
+		pos.y = pos.y - textButtonSpacing;
+	}
+	if( mSettingsButton.isVisible() ) {
+		mSettingsButton.setPosition( pos.x, pos.y );
+		pos.y = pos.y - textButtonSpacing;
+	}
+	if( mGenesButton.isVisible() ) {
+		mGenesButton.setPosition( pos.x, pos.y );
+		pos.y = pos.y - textButtonSpacing;
+	}
+	if( mFamilyTreesButton.isVisible() ) {
+		mFamilyTreesButton.setPosition( pos.x, pos.y );
+		pos.y = pos.y - textButtonSpacing;
+	}
+}

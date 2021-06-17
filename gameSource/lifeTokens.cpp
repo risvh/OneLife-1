@@ -220,4 +220,31 @@ void drawTokenMessage( doublePair inPos ) {
     
     }
 
+char *getTokenMessage() {
+    int numTokens = getNumLifeTokens();
+
+    if( numTokens != -1 ) {
+        
+        if( numTokens > 0 ) {
+            char *message = getLifeTokenString();
+            
+            return message;
+            }
+        else if( numTokens == 0 ) {
+            int h, m, s;
+            
+            getLifeTokenTime( &h, &m, &s );
+
+            char *timeString = autoSprintf( "%d:%02d:%02d", h, m, s );
+
+            char *message = autoSprintf( "%s %s", translate( "tokenTimeMessage" ), timeString );
+			
+			delete [] timeString;
+			
+			return message;
+            }
+        }
+		
+    return NULL;
+    }
 

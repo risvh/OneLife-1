@@ -23,6 +23,8 @@ void drawFitnessScore( doublePair inPos, char inMoreDigits = false );
 // inSkip controls paging through list 
 void drawFitnessScoreDetails( doublePair inPos, int inSkip );
 
+char *getFitnessScoreMessage( char inMoreDigits );
+
 int getMaxFitnessListSkip();
 
 char canFitnessScroll();
