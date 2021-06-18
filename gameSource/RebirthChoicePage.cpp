@@ -22,6 +22,8 @@ extern char *accountKey;
 
 extern SpriteHandle instructionsSprite;
 
+extern bool useDarkMode;
+
 
 
 static doublePair tutorialButtonPos = { 522, 300 };
@@ -184,4 +186,36 @@ void RebirthChoicePage::makeActive( char inFresh ) {
         mTutorialButton.setPosition( tutorialButtonPos.x, tutorialButtonPos.y );
         mTutorialButton.setLabelText( translate( "tutorial" ) );
         }
+		
+	updateOnDarkMode();
     }
+
+
+void RebirthChoicePage::updateOnDarkMode() {
+
+	if ( useDarkMode ) {
+		
+		mReviewButton.setVisible( false );
+		mTutorialButton.setVisible( false );
+		
+		mRebornButton.setPosition( 0, 80 );
+		mGenesButton.setPosition( 0, 0 );
+		mMenuButton.setPosition( 0, -80 );
+		mQuitButton.setPosition( 0, -160 );
+
+	} else {
+		
+		bool useSteamUpdate = SettingsManager::getIntSetting( "useSteamUpdate", 0 );
+		mReviewButton.setVisible( useSteamUpdate );
+		
+		mTutorialButton.setVisible( true );
+		
+		mQuitButton.setPosition( -150, -128 );
+		mRebornButton.setPosition( 150, -128 );
+		mGenesButton.setPosition( -300, 64 );
+		mTutorialButton.setPosition( 522, 300 );
+		mMenuButton.setPosition( -522, 300 );
+
+	}
+	
+}

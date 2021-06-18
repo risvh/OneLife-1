@@ -2151,6 +2151,24 @@ void drawFrame( char inUpdate ) {
                     }
                 currentGamePage->base_makeActive( true );
                 }
+            else if( extendedMessagePage->checkSignal( "reborn" ) ) {
+                // get server address again from scratch, in case
+                // the server we were on just crashed
+                
+                // but keep twin status, if set
+                startConnecting();
+                }
+            else if( extendedMessagePage->checkSignal( "genes" ) ) {
+                currentGamePage = geneticHistoryPage;
+                currentGamePage->base_makeActive( true );
+                }
+            else if( extendedMessagePage->checkSignal( "menu" ) ) {
+                currentGamePage = existingAccountPage;
+                currentGamePage->base_makeActive( true );
+                }
+            else if( extendedMessagePage->checkSignal( "quit" ) ) {
+                quitGame();
+                }
             }
         else if( currentGamePage == pollPage ) {
             if( pollPage->checkSignal( "done" ) ) {

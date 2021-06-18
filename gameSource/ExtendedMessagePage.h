@@ -25,10 +25,19 @@ class ExtendedMessagePage : public GamePage, public ActionListener {
 
         virtual void draw( doublePair inViewCenter, 
                            double inViewSize );
+		
+		virtual void makeActive( char inFresh );
+		
+		virtual void updateOnDarkMode();
         
     protected:
         
         TextButton mOKButton;
+		
+        TextButton mRebornButton;
+        TextButton mGenesButton;
+        TextButton mMenuButton;
+		TextButton mQuitButton;
 
         const char *mMessageKey;
         char *mSubMessage;
