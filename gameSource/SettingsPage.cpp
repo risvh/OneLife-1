@@ -23,6 +23,7 @@ extern Font *mainFont;
 extern float musicLoudness;
 
 extern bool useDarkMode;
+extern float darkOverlayBrightness;
 
 
 SettingsPage::SettingsPage()
@@ -35,6 +36,9 @@ SettingsPage::SettingsPage()
           mBorderlessBox( 0, 168, 4 ),
           mEnableNudeBox( -335, 148, 4 ),
 		  mUseDarkModeBox( 0, -278, 4 ),
+          mDarkOverlayBrightnessSlider( mainFont, 230, -278, 4, 200, 30,
+                                0.0, 1.0, 
+                                translate( "ALPHA:" ) ),
           mMusicLoudnessSlider( mainFont, 0, 40, 4, 200, 30,
                                 0.0, 1.0, 
                                 translate( "musicLoudness" ) ),
@@ -167,7 +171,9 @@ SettingsPage::SettingsPage()
 	
 	mOldUseDarkModeSetting = mUseDarkModeSetting;
     
-    
+    addComponent( &mDarkOverlayBrightnessSlider );
+	mDarkOverlayBrightnessSlider.addActionListener( this );
+	mDarkOverlayBrightnessSlider.toggleField( false );
 
     addComponent( &mMusicLoudnessSlider );
     addComponent( &mSoundEffectsLoudnessSlider );
@@ -256,6 +262,8 @@ void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
         SettingsManager::setSetting( "useDarkMode", newSetting );
 		
 		useDarkMode = newSetting;
+		
+		mDarkOverlayBrightnessSlider.setVisible( newSetting );
         }
     else if( inTarget == &mRestartButton ||
              inTarget == &mRedetectButton ) {
@@ -315,6 +323,16 @@ void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
             setMusicLoudness( mMusicLoudnessSlider.getValue(), true );
             }
         }
+    else if( inTarget == &mDarkOverlayBrightnessSlider ) {
+		
+		darkOverlayBrightness = mDarkOverlayBrightnessSlider.getValue();
+        
+        if( ! mDarkOverlayBrightnessSlider.isPointerDown() ) {
+            
+            SettingsManager::setSetting( "darkOverlayBrightness", darkOverlayBrightness );
+				
+            }
+        } 
     else if( inTarget == &mCopyButton ) {
         char *address = mCustomServerAddressField.getText();
         
@@ -541,6 +559,12 @@ void SettingsPage::makeActive( char inFresh ) {
 		mCustomServerPortField.setInt( port );
 		
 		delete [] address;
+		
+		
+		mDarkOverlayBrightnessSlider.setVisible( mUseDarkModeBox.getToggled() );
+		float darkOverlayBrightness = SettingsManager::getFloatSetting( "darkOverlayBrightness", 1.0 );
+		mDarkOverlayBrightnessSlider.setValue( darkOverlayBrightness );
+		
         
 
         mMusicLoudnessSlider.setValue( musicLoudness );
@@ -614,6 +638,7 @@ void SettingsPage::updateOnDarkMode() {
 		
 		mUseDarkModeBox.setPosition( -38, -140 );
 		mOldUseDarkModeSetting = true;
+		mDarkOverlayBrightnessSlider.setPosition( 212, -140 );
 	} else {
 		mMusicLoudnessSlider.setPosition( 0, 40 );
 		mSoundEffectsLoudnessSlider.setPosition( 0, -48 );
@@ -642,6 +667,7 @@ void SettingsPage::updateOnDarkMode() {
 
 		mUseDarkModeBox.setPosition( 0, -190 );
 		mOldUseDarkModeSetting = false;
+		mDarkOverlayBrightnessSlider.setPosition( 230, -278 );
 	}
 
 }
@@ -732,6 +758,13 @@ void SettingsPage::darkModeDraw( doublePair inViewCenter,
     pos.y -= 2;
 
     mainFont->drawString( "USE DARK MODE:", pos, alignRight );
+	
+    pos = mDarkOverlayBrightnessSlider.getPosition();
+    
+    pos.x += 72;
+    pos.y -= 2;
+
+    mainFont->drawString( "BRIGHTNESS:", pos, alignRight );
 
 
     pos = mCursorModeSet->getPosition();

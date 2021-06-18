@@ -222,6 +222,7 @@ int musicOff = 0;
 float musicLoudness;
 
 bool useDarkMode;
+float darkOverlayBrightness;
 
 int webRetrySeconds;
 
@@ -389,6 +390,7 @@ char *getCustomRecordedGameData() {
         SettingsManager::getFloatSetting( "musicLoudness", 1.0f );
 		
 	useDarkMode = SettingsManager::getIntSetting( "useDarkMode", 0 );
+	darkOverlayBrightness = SettingsManager::getFloatSetting( "darkOverlayBrightness", 1.0 );
     
     int webRetrySecondsSetting = 
         SettingsManager::getIntSetting( "webRetrySeconds", 10 );
@@ -2222,6 +2224,12 @@ void drawFrame( char inUpdate ) {
     if( pauseScreenFade > 0 ) {
         drawPauseScreen();
         }
+		
+	if ( useDarkMode ) {
+		float alpha = 0.5 * ( 1.0 - darkOverlayBrightness );
+		setDrawColor( 0, 0, 0, alpha );
+		drawRect( lastScreenViewCenter, 640*HetuwMod::zoomScale, 360*HetuwMod::zoomScale );
+	}
     }
 
 

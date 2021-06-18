@@ -42,6 +42,8 @@ class SettingsPage : public GamePage, public ActionListener {
         int mEnableNudeSetting;
 		int mUseDarkModeSetting;
 		int mOldUseDarkModeSetting;
+		
+		ValueSlider mDarkOverlayBrightnessSlider;
         
         SoundUsage mTestSound;
 
