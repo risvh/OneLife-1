@@ -35,6 +35,8 @@ extern char *userEmail;
 extern Font *mainFont;
 extern Font *numbersFontFixed;
 
+extern bool useDarkMode;
+
 
 static char *leaderboardName = NULL;
 
@@ -608,6 +610,12 @@ void drawFitnessScoreDetails( doublePair inPos, int inSkip ) {
             
             drawMessage( leaderboardString, namePos );
             delete [] leaderboardString;
+			
+			if ( useDarkMode ) {
+				setDrawColor( 0, 0, 0, 0.5 );
+				doublePair rectPos = { namePos.x, namePos.y - 15 };
+				drawRect( rectPos, 320, 40 );
+			}
             }
         
         

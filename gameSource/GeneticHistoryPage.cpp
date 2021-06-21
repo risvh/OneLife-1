@@ -11,6 +11,7 @@
 #include "minorGems/game/Font.h"
 
 #include "minorGems/game/game.h"
+#include "minorGems/game/drawUtils.h"
 
 
 #include "minorGems/util/stringUtils.h"
@@ -19,6 +20,8 @@
 
 
 extern Font *mainFont;
+
+extern bool useDarkMode;
 
 
 GeneticHistoryPage::GeneticHistoryPage() 
@@ -104,6 +107,12 @@ void GeneticHistoryPage::draw( doublePair inViewCenter,
 
     doublePair pos = { 0, 300 };
     drawFitnessScoreDetails( pos, mSkip );
+	
+	if ( useDarkMode ) {
+		setDrawColor( 0, 0, 0, 0.5 );
+		doublePair rectPos = { pos.x, pos.y - 345 - 350 - 32 };
+		drawRect( rectPos, 700, 680 );
+	}
     }
 
 
