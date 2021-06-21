@@ -23,6 +23,8 @@ extern char *userEmail;
 extern char *userTwinCode;
 extern int userTwinCount;
 
+extern bool useDarkMode;
+
 
 
 TwinPage::TwinPage()
@@ -219,6 +221,7 @@ void TwinPage::actionPerformed( GUIComponent *inTarget ) {
 
 
 void TwinPage::makeActive( char inFresh ) {
+	updateOnDarkMode();
     }
 
         
@@ -230,3 +233,31 @@ void TwinPage::draw( doublePair inViewCenter,
     drawMessage( translate( "twinTip" ), pos );
     }
 
+
+void TwinPage::updateOnDarkMode() {
+
+	if ( useDarkMode ) {
+		
+		mCodeField.setPosition( 230, 144 );
+		mGenerateButton.setPosition( 0, -120 );
+		mLoginButton.setPosition( 0, -200 );
+		mCancelButton.setPosition( 0, -280 );
+		mPlayerCountRadioButtonSet->setPosition( 400, 36 );
+		
+		mCopyButton.setVisible( false );
+		mPasteButton.setVisible( false );
+
+	} else {
+		
+		mCodeField.setPosition( 0, 128 );
+		mGenerateButton.setPosition( 0, 49 );
+		mLoginButton.setPosition( 400, -280 );
+		mCancelButton.setPosition( -400, -280 );
+		mPlayerCountRadioButtonSet->setPosition( 0, -100 );
+		
+		mCopyButton.setVisible( true );
+		mPasteButton.setVisible( true );
+
+	}
+	
+}
