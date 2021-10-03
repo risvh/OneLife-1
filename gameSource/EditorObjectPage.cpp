@@ -97,6 +97,7 @@ EditorObjectPage::EditorObjectPage()
                                  false,
                                  "Tm Strch", "0123456789.", NULL ),
           mSlotsLockedCheckbox( -260, -200, 2 ),
+          mSlotsNoSwapCheckbox( -160, -200, 2 ),
           mNoFlipCheckbox( 460, -260, 2 ),
           mSideAccessCheckbox( 460, -240, 2 ),
           mDeadlyDistanceField( smallFont, 
@@ -252,6 +253,7 @@ EditorObjectPage::EditorObjectPage()
     addComponent( &mSlotSizeField );
     addComponent( &mSlotTimeStretchField );
     addComponent( &mSlotsLockedCheckbox );
+    addComponent( &mSlotsNoSwapCheckbox );
     
     addComponent( &mNoFlipCheckbox );
     addComponent( &mSideAccessCheckbox );
@@ -274,6 +276,7 @@ EditorObjectPage::EditorObjectPage()
     mSlotSizeField.setVisible( false );
     mSlotTimeStretchField.setVisible( false );
     mSlotsLockedCheckbox.setVisible( false );
+    mSlotsNoSwapCheckbox.setVisible( false );
     
 
     addComponent( &mDeadlyDistanceField );
@@ -1486,6 +1489,7 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
                    mCurrentObject.slotParent,
                    mSlotTimeStretchField.getFloat(),
                    mSlotsLockedCheckbox.getToggled(),
+                   mSlotsNoSwapCheckbox.getToggled(),
                    mCurrentObject.numSprites, mCurrentObject.sprites, 
                    mCurrentObject.spritePos,
                    mCurrentObject.spriteRot,
@@ -1635,6 +1639,7 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
                    mCurrentObject.slotParent,
                    mSlotTimeStretchField.getFloat(),
                    mSlotsLockedCheckbox.getToggled(),
+                   mSlotsNoSwapCheckbox.getToggled(),
                    mCurrentObject.numSprites, mCurrentObject.sprites, 
                    mCurrentObject.spritePos,
                    mCurrentObject.spriteRot,
@@ -1719,11 +1724,13 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
         mSlotSizeField.setFloat( 1, 4, true );
         mSlotTimeStretchField.setText( "1.0" );
         mSlotsLockedCheckbox.setToggled( false );
+        mSlotsNoSwapCheckbox.setToggled( false );
 
         mContainSizeField.setVisible( false );
         mSlotSizeField.setVisible( false );
         mSlotTimeStretchField.setVisible( false );
         mSlotsLockedCheckbox.setVisible( false );
+        mSlotsNoSwapCheckbox.setVisible( false );
         
         mFloorCheckbox.setToggled( false );
         mFloorCheckbox.setVisible( true );
@@ -2002,6 +2009,7 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
         mSlotSizeField.setVisible( true );
         mSlotTimeStretchField.setVisible( true );
         mSlotsLockedCheckbox.setVisible( true );
+        mSlotsNoSwapCheckbox.setVisible( true );
         
         mPersonAgeSlider.setVisible( false );
 
@@ -2032,6 +2040,8 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
                 
                 mSlotsLockedCheckbox.setToggled( false );
                 mSlotsLockedCheckbox.setVisible( false );
+                mSlotsNoSwapCheckbox.setToggled( false );
+                mSlotsNoSwapCheckbox.setVisible( false );
 
                 mBehindSlotsCheckbox.setVisible( false );
                 mBehindPlayerCheckbox.setVisible( false );
@@ -2709,6 +2719,7 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
             mSlotTimeStretchField.setFloat( pickedRecord->slotTimeStretch,
                                             -1, true );
             mSlotsLockedCheckbox.setToggled( pickedRecord->slotsLocked );
+            mSlotsNoSwapCheckbox.setToggled( pickedRecord->slotsNoSwap );
             
             mDeadlyDistanceField.setInt( pickedRecord->deadlyDistance );
             mUseDistanceField.setInt( pickedRecord->useDistance );
@@ -3090,11 +3101,14 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
                 
                 mSlotsLockedCheckbox.setToggled( false );
                 mSlotsLockedCheckbox.setVisible( false );
+                mSlotsNoSwapCheckbox.setToggled( false );
+                mSlotsNoSwapCheckbox.setVisible( false );
                 }
             else {
                 mSlotSizeField.setVisible( true );
                 mSlotTimeStretchField.setVisible( true );
                 mSlotsLockedCheckbox.setVisible( true );
+                mSlotsNoSwapCheckbox.setVisible( true );
                 }
             }
         }
@@ -3157,6 +3171,8 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
             
             mSlotsLockedCheckbox.setToggled( false );
             mSlotsLockedCheckbox.setVisible( false );
+            mSlotsNoSwapCheckbox.setToggled( false );
+            mSlotsNoSwapCheckbox.setVisible( false );
 
             mDemoSlotsButton.setVisible( false );
             mCurrentObject.numSlots = 0;
@@ -4050,6 +4066,11 @@ void EditorObjectPage::draw( doublePair inViewCenter,
         pos = mSlotsLockedCheckbox.getPosition();
         pos.x -= checkboxSep;
         smallFont->drawString( "Locked", pos, alignRight );
+        }
+    if( mSlotsNoSwapCheckbox.isVisible() ) {
+        pos = mSlotsNoSwapCheckbox.getPosition();
+        pos.x -= checkboxSep;
+        smallFont->drawString( "No Swap", pos, alignRight );
         }
 
     if( mNoFlipCheckbox.isVisible() ) {

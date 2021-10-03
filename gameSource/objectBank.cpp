@@ -1042,6 +1042,20 @@ float initObjectBankStep() {
                             
                     next++;
                     }
+                    
+                r->slotsNoSwap = 0;
+                if( strstr( lines[next], 
+                            "slotsNoSwap=" ) != NULL ) {
+                    // flag present
+                    
+                    int flagRead = 0;                            
+                    sscanf( lines[next], "slotsNoSwap=%d", 
+                            &( flagRead ) );
+                    
+                    r->slotsNoSwap = flagRead;
+                            
+                    next++;
+                    }
                 
                 
                 r->slotPos = new doublePair[ r->numSlots ];
@@ -2314,6 +2328,7 @@ int reAddObject( ObjectRecord *inObject,
                         inObject->slotParent,
                         inObject->slotTimeStretch,
                         inObject->slotsLocked,
+                        inObject->slotsNoSwap,
                         inObject->numSprites, 
                         inObject->sprites, 
                         inObject->spritePos,
@@ -2587,6 +2602,7 @@ int addObject( const char *inDescription,
                int *inSlotParent,
                float inSlotTimeStretch,
                char inSlotsLocked,
+               char inSlotsNoSwap,
                int inNumSprites, int *inSprites, 
                doublePair *inSpritePos,
                double *inSpriteRot,
@@ -2793,6 +2809,7 @@ int addObject( const char *inDescription,
                                       inNumSlots, inSlotTimeStretch ) );
         lines.push_back( autoSprintf( "slotSize=%f", inSlotSize ) );
         lines.push_back( autoSprintf( "slotsLocked=%d", (int)inSlotsLocked ) );
+        lines.push_back( autoSprintf( "slotsNoSwap=%d", (int)inSlotsNoSwap ) );
 
         for( int i=0; i<inNumSlots; i++ ) {
             lines.push_back( autoSprintf( "slotPos=%f,%f,vert=%d,parent=%d", 
@@ -3084,6 +3101,7 @@ int addObject( const char *inDescription,
     
     r->slotTimeStretch = inSlotTimeStretch;
     r->slotsLocked = inSlotsLocked;
+    r->slotsNoSwap = inSlotsNoSwap;
 
     r->numSprites = inNumSprites;
     

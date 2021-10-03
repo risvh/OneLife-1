@@ -225,6 +225,9 @@ typedef struct ObjectRecord {
         // true if nothing can be added/removed from container
         char slotsLocked;
         
+        // true if swap is disabled for this container
+        char slotsNoSwap;
+        
 
         int numSprites;
         
@@ -529,6 +532,7 @@ int addObject( const char *inDescription,
                int *inSlotParent,
                float inSlotTimeStretch,
                char inSlotsLocked,
+               char inSlotsNoSwap,
                int inNumSprites, int *inSprites, 
                doublePair *inSpritePos,
                double *inSpriteRot,

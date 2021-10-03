@@ -17103,7 +17103,9 @@ int main() {
                                             }
                                         
                                         
-
+                                        
+                                        bool containerAllowSwap = !targetObj->slotsNoSwap;
+                                        
                                         // DROP indicates they 
                                         // right-clicked on container
                                         // so use swap mode
@@ -17112,7 +17114,7 @@ int main() {
                                             addHeldToContainer( 
                                                 nextPlayer,
                                                 target,
-                                                m.x, m.y, true ) ) {
+                                                m.x, m.y, containerAllowSwap ) ) {
                                             // handled
                                             }
                                         else if( canDrop && 
