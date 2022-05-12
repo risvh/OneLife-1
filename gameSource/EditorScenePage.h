@@ -242,6 +242,7 @@ class EditorScenePage : public GamePage, public ActionListener {
 		void queuesPopFront();
 		void applySceneCellArrays( SceneCell **cells, SceneCell **floorCells );
 		
+        void mark( int x, int y, int beforeOrAfter );
 		void backup();
 		void undo();
 		void redo();

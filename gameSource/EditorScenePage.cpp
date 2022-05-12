@@ -2967,7 +2967,6 @@ void EditorScenePage::pointerDown( float inX, float inY ) {
 						floodFill( x, y,
 								   c->biome,
 								   gId );
-                        backup();
                                    
 					} else {
 						// single cell
