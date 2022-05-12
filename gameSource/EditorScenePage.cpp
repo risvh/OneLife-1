@@ -6,6 +6,7 @@
 #include "minorGems/game/drawUtils.h"
 
 #include "minorGems/util/stringUtils.h"
+#include "minorGems/util/SettingsManager.h"
 
 #include "minorGems/io/file/File.h"
 
@@ -431,7 +432,9 @@ void EditorScenePage::floodFill( int inX, int inY,
     if( mCells[inY][inX].biome == inOldBiome &&
         mCells[inY][inX].biome != inNewBiome ) {
         
+        mark( inX, inY, 0 );
         mCells[inY][inX].biome = inNewBiome;
+        mark( inX, inY, 1 );
         
         floodFill( inX - 1, inY, inOldBiome, inNewBiome );
         floodFill( inX + 1, inY, inOldBiome, inNewBiome );
@@ -764,98 +767,71 @@ SceneCell *EditorScenePage::getFloorCell(int absX, int absY) {
 
 
 
-std::vector<SceneCell**> cellsQueue;
-std::vector<SceneCell**> floorCellsQueue;
+std::vector<std::vector<GridPos>> touchedQueue;
+std::vector<std::vector<SceneCell>> cellsQueue;
+std::vector<std::vector<SceneCell>> floorCellsQueue;
+std::vector<std::vector<SceneCell>> cellsAfterQueue;
+std::vector<std::vector<SceneCell>> floorCellsAfterQueue;
 int queueIndex = 0;
-int queueCapacity = 8;
+int queueCapacity = SettingsManager::getIntSetting( "townPlannerQueueCapacity", 8 );
 int queueSize = 0;
 
-SceneCell ** EditorScenePage::copySceneCellArray( SceneCell **array ) {
-	SceneCell **arrayCopy = new SceneCell*[mSceneH];
-    for( int y=0; y<mSceneH; y++ ) {
-        arrayCopy[y] = new SceneCell[ mSceneW ];
-        // for( int x=0; x<mSceneW; x++ ) {
-            // arrayCopy[y][x] = mEmptyCell;
-		// }
-	}
-	for( int y=0; y<mSceneH; y++ ) {
-		for( int x=0; x<mSceneW; x++ ) {
-			arrayCopy[ y ][ x ] = array[ y ][ x ];
-		}
-	}
-	return arrayCopy;
-}
+std::vector<GridPos> currentTouchedTiles;
+std::vector<GridPos> currentAfterTouchedTiles;
+std::vector<SceneCell> currentCells;
+std::vector<SceneCell> currentFloorCells;
+std::vector<SceneCell> currentAfterCells;
+std::vector<SceneCell> currentAfterFloorCells;
 
-void EditorScenePage::queuesPopBack() {
-	SceneCell **mCellsCopy = cellsQueue.back();
-	if( mCellsCopy != NULL ) {
-		for( int y=0; y<mSceneH; y++ ) {
-			delete [] mCellsCopy[y];
-		}
-		delete [] mCellsCopy;
-	}
-	cellsQueue.pop_back();
+void EditorScenePage::mark( int x, int y, int beforeOrAfter = 0 ) {
 	
-	SceneCell **mFloorCellsCopy = floorCellsQueue.back();
-	if( mFloorCellsCopy != NULL ) {
-		for( int y=0; y<mSceneH; y++ ) {
-			delete [] mFloorCellsCopy[y];
-		}
-		delete [] mFloorCellsCopy;
-	}
-	floorCellsQueue.pop_back();
-	
-	queueSize = static_cast<int>(cellsQueue.size());
+    if( beforeOrAfter == 0 ) {
+        for( int i=0; i<currentTouchedTiles.size(); i++ ) {
+            GridPos currentTile = currentTouchedTiles[i];
+            if( currentTile.x == x && currentTile.y == y ) return;
+        }
+    } else {
+        for( int i=0; i<currentAfterTouchedTiles.size(); i++ ) {
+            GridPos currentTile = currentAfterTouchedTiles[i];
+            if( currentTile.x == x && currentTile.y == y ) return;
+        }
+    }
+    
+    GridPos tile = { x, y };
+    
+    if( beforeOrAfter == 0 ) {
+        currentTouchedTiles.push_back( tile );
+        currentCells.push_back( mCells[tile.y][tile.x] );
+        currentFloorCells.push_back( mFloorCells[tile.y][tile.x] );
+    } else {
+        currentAfterTouchedTiles.push_back( tile );
+        currentAfterCells.push_back( mCells[tile.y][tile.x] );
+        currentAfterFloorCells.push_back( mFloorCells[tile.y][tile.x] );
+    }
 }
-
-void EditorScenePage::queuesPopFront() {
-	SceneCell **mCellsCopy = cellsQueue.front();
-	if( mCellsCopy != NULL ) {
-		for( int y=0; y<mSceneH; y++ ) {
-			delete [] mCellsCopy[y];
-		}
-		delete [] mCellsCopy;
-	}
-	cellsQueue.erase(cellsQueue.begin());
-	
-	SceneCell **mFloorCellsCopy = floorCellsQueue.front();
-	if( mFloorCellsCopy != NULL ) {
-		for( int y=0; y<mSceneH; y++ ) {
-			delete [] mFloorCellsCopy[y];
-		}
-		delete [] mFloorCellsCopy;
-	}
-	floorCellsQueue.erase(floorCellsQueue.begin());
-	
-	queueSize = static_cast<int>(cellsQueue.size());
-}
-
-void EditorScenePage::applySceneCellArrays( SceneCell **cells, SceneCell **floorCells ) {
-	for( int y=0; y<mSceneH; y++ ) {
-		for( int x=0; x<mSceneW; x++ ) {
-			mCells[ y ][ x ] = cells[ y ][ x ];
-			mFloorCells[ y ][ x ] = floorCells[ y ][ x ];
-		}
-	}
-}
-
-bool onRedo = false;
 
 void EditorScenePage::backup() {
 	
 	mapChanged = true;
 	
-	onRedo = false;
-	
 	while (queueIndex < queueSize) {
 		queuesPopBack();
 	}
-	
-	SceneCell **mCellsCopy = copySceneCellArray( mCells );
-	SceneCell **mFloorCellsCopy = copySceneCellArray( mFloorCells );
-	cellsQueue.push_back( mCellsCopy );
-	floorCellsQueue.push_back( mFloorCellsCopy );
-	queueSize = static_cast<int>(cellsQueue.size());
+    
+    touchedQueue.push_back( currentTouchedTiles );
+    cellsQueue.push_back( currentCells );
+    floorCellsQueue.push_back( currentFloorCells );
+    cellsAfterQueue.push_back( currentAfterCells );
+    floorCellsAfterQueue.push_back( currentAfterFloorCells );
+    
+    currentTouchedTiles.clear();
+    currentAfterTouchedTiles.clear();
+    currentCells.clear();
+    currentFloorCells.clear();
+    currentAfterCells.clear();
+    currentAfterFloorCells.clear();
+
+    queueSize = touchedQueue.size();
 	
 	if (queueSize > queueCapacity) {
 		queuesPopFront();
@@ -863,42 +839,66 @@ void EditorScenePage::backup() {
 	
 	queueIndex = queueSize;
 	checkVisible();
-	
+    
 }
 
 void EditorScenePage::undo() {
 	
 	if (queueSize == 0 || queueIndex == 0) return;
-	
-	if (queueIndex == queueSize && !onRedo) {
-		backup();
-		queueIndex--;
-	}
-	
-	queueIndex--;
-	SceneCell **mCellsCopy = cellsQueue[queueIndex];
-	SceneCell **mFloorCellsCopy = floorCellsQueue[queueIndex];
-	applySceneCellArrays( mCellsCopy, mFloorCellsCopy );
+    
+    queueIndex--;
+    
+    std::vector<GridPos> touchedTiles = touchedQueue[queueIndex];
+    std::vector<SceneCell> cells = cellsQueue[queueIndex];
+    std::vector<SceneCell> floors = floorCellsQueue[queueIndex];
+    
+    for( int i=0; i<touchedTiles.size(); i++ ) {
+        GridPos tile = touchedTiles[i];
+        mCells[tile.y][tile.x] = cells[i];
+        mFloorCells[tile.y][tile.x] = floors[i];
+    }
 	
 	checkVisible();
-
 }
 
 void EditorScenePage::redo() {
 	
-	if (queueIndex >= queueSize - 1) return;
-	
-	onRedo = true;
-	
-	queueIndex++;
-	SceneCell **mCellsCopy = cellsQueue[queueIndex];
-	SceneCell **mFloorCellsCopy = floorCellsQueue[queueIndex];
-	applySceneCellArrays( mCellsCopy, mFloorCellsCopy );
+	if (queueIndex >= queueSize) return;
+
+    std::vector<GridPos> touchedTiles = touchedQueue[queueIndex];
+    std::vector<SceneCell> cells = cellsAfterQueue[queueIndex];
+    std::vector<SceneCell> floors = floorCellsAfterQueue[queueIndex];
+    
+    for( int i=0; i<touchedTiles.size(); i++ ) {
+        GridPos tile = touchedTiles[i];
+        mCells[tile.y][tile.x] = cells[i];
+        mFloorCells[tile.y][tile.x] = floors[i];
+    }
+    
+    queueIndex++;
 	
 	checkVisible();
-	
 }
 
+void EditorScenePage::queuesPopBack() {
+    touchedQueue.pop_back();
+    cellsQueue.pop_back();
+    floorCellsQueue.pop_back();
+    cellsAfterQueue.pop_back();
+    floorCellsAfterQueue.pop_back();
+	
+	queueSize = touchedQueue.size();
+}
+
+void EditorScenePage::queuesPopFront() {
+	touchedQueue.erase(touchedQueue.begin());
+    cellsQueue.erase(cellsQueue.begin());
+    floorCellsQueue.erase(floorCellsQueue.begin());
+    cellsAfterQueue.erase(cellsAfterQueue.begin());
+    floorCellsAfterQueue.erase(floorCellsAfterQueue.begin());
+    
+    queueSize = touchedQueue.size();
+}
 
 
 
@@ -2510,37 +2510,45 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
         // paste
         if( copyAreaSet && isShiftKeyDown() ) {
 			if ( mCurY + copyAreaSize <= mSceneH && mCurX + copyAreaSize <= mSceneW ) {
-				backup();
 				for( int y=mCurY; y< mCurY + copyAreaSize; y++ ) {
 					for( int x=mCurX; x< mCurX + copyAreaSize; x++ ) {
-					
+                        
+                        mark( x, y, 0 );
+                        
 						copyArea[ y - mCurY ][ x - mCurX ].biome = mCells[ y ][ x ].biome;
 					
 						mCells[ y ][ x ] = copyArea[ y - mCurY ][ x - mCurX ];
 						mFloorCells[ y ][ x ] = copyFloorArea[ y - mCurY ][ x - mCurX ];
 						mPersonCells[ y ][ x ] = copyPeopleArea[ y - mCurY ][ x - mCurX ];
+                        
+                        mark( x, y, 1 );
+                        
 					}
 				}
+                backup();
 			}
-		} 
+		}
 		if ( !isShiftKeyDown() ) {
 			if( mCopyBuffer.oID > 0 &&
 				getObject( mCopyBuffer.oID )->person ) {
-				backup();
 				*p = mCopyBuffer;
 			} else {
-				backup();
+				mark( mCurX, mCurY, 0 );
 				mCopyBuffer.biome = c->biome;
 				*c = mCopyBuffer;
+                mark( mCurX, mCurY, 1 );
+                backup();
 			}
 		}
         restartAllMoves();
 	}
     if ( tolower(inASCII) == 'q' ) {
-		backup();
+		mark( mCurX, mCurY, 0 );
         // clearCell( c );
         // clearCell( p );
         clearCell( f );
+        mark( mCurX, mCurY, 1 );
+        backup();
     }
     if( tolower(inASCII) == 'o' ) {
         mZeroX = mCurX;
@@ -2850,6 +2858,8 @@ bool EditorScenePage::hoverAnyUI( float inX, float inY ) {
 }
 
 void EditorScenePage::pointerUp( float inX, float inY ) {
+    
+    if( currentTouchedTiles.size() > 0 ) backup();
 	
 	if ( mObjectPickerClicked ) {
 		char oWasRightClick = false;
@@ -2922,51 +2932,58 @@ void EditorScenePage::pointerDown( float inX, float inY ) {
 				
 				if( isShiftKeyDown() && c->oID > 0 && !o->floor ) {
 					if( getObject( c->oID )->numSlots > c->contained.size() ) {
-						backup();
+						mark( x, y, 0 );
 						c->contained.push_back( oId );
 						SimpleVector<int> sub;
 						c->subContained.push_back( sub );
 						placed = true;
+                        mark( x, y, 1 );
 					}
 				}
 				if( !placed && o->floor ) {
-					backup();
+                    mark( x, y, 0 );
 					// place floor
 					f->oID = oId;
 					placed = true;
+                    mark( x, y, 1 );
 				}
 				
 				if( !placed ) {
 					if( !getObject( oId )->person ) {
-						backup();
+						mark( x, y, 0 );
 						c->oID = oId;
 						c->contained.deleteAll();
 						c->subContained.deleteAll();
-						c->numUsesRemaining = o->numUses;                    
+						c->numUsesRemaining = o->numUses;
+                        mark( x, y, 1 );
 					}
 				}
 			} else if( gId >= 0 ) {
 				
 				if( gId >= 0 ) {
 					
-					backup();
-					
 					if( isShiftKeyDown() ) {
 						
 						floodFill( x, y,
 								   c->biome,
 								   gId );
+                        backup();
+                                   
 					} else {
 						// single cell
+                        mark( x, y, 0 );
 						mCells[ y ][ x ].biome = gId;
+                        mark( x, y, 1 );
 					}
+                    
 				}				
 			}
 		} else {
-			backup();
+			mark( x, y, 0 );
 			clearCell(c);
 			if( isShiftKeyDown() ) clearCell(f);
 			if( isCommandKeyDown() ) c->biome = -1;
+            mark( x, y, 1 );
 		}
 		
 	}
@@ -3031,27 +3048,30 @@ void EditorScenePage::pointerDrag( float inX, float inY ) {
 				
 				if( oWasRightClick && c->oID > 0 && !o->floor ) {
 					if( getObject( c->oID )->numSlots > c->contained.size() ) {
-						// backup();
+						mark( x, y, 0 );
 						c->contained.push_back( oId );
 						SimpleVector<int> sub;
 						c->subContained.push_back( sub );
 						placed = true;
+                        mark( x, y, 1 );
 					}
 				}
 				if( !placed && o->floor ) {
-					// backup();
+					mark( x, y, 0 );
 					// place floor
 					f->oID = oId;
 					placed = true;
+                    mark( x, y, 1 );
 				}
 				
 				if( !placed ) {
 					if( !getObject( oId )->person ) {
-						// backup();
+						mark( x, y, 0 );
 						c->oID = oId;
 						c->contained.deleteAll();
 						c->subContained.deleteAll();
 						c->numUsesRemaining = o->numUses;                    
+                        mark( x, y, 1 );
 					}
 				}
 			} else if( gId >= 0 ) {
@@ -3064,18 +3084,21 @@ void EditorScenePage::pointerDrag( float inX, float inY ) {
 								   c->biome,
 								   gId );
 					} else {
+                        mark( x, y, 0 );
 						// single cell
 						mCells[ y ][ x ].biome = gId;
+                        mark( x, y, 1 );
 					}
 				}				
 			}
 		}
 		
 	} else {
-		// backup();
+		mark( x, y, 0 );
 		clearCell(c);
 		if( isShiftKeyDown() ) clearCell(f);
 		if( isCommandKeyDown() ) c->biome = -1;
+        mark( x, y, 1 );
 	}
 	// checkVisible();
 	
