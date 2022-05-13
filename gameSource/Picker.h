@@ -47,6 +47,8 @@ class Picker : public PageComponent, ActionListener,
         virtual void keyDown( unsigned char inASCII );
         virtual void specialKeyDown( int inKeyCode );
 
+        virtual void nextPage();
+        virtual void prevPage();
         
     protected:
         virtual void draw();
@@ -65,16 +67,16 @@ class Picker : public PageComponent, ActionListener,
         int mNumResults;
         char *mResultsUnclickable;
 
-
+    
         TextButton mNextButton;
         TextButton mPrevButton;
 
         TextButton mDelButton;
         TextButton mDelConfirmButton;
 
-        
+    public:
         TextField mSearchField;
-        
+    protected:
         int mSelectionIndex;
         
         char mSelectionRightClicked;

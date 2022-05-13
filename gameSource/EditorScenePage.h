@@ -187,6 +187,7 @@ class EditorScenePage : public GamePage, public ActionListener {
         
         SceneCell mEmptyCell;
         SceneCell mCopyBuffer;
+        SceneCell mCopyFloorBuffer;
         
         
         // when we get near edge of screen with cell selection, we
@@ -217,7 +218,6 @@ class EditorScenePage : public GamePage, public ActionListener {
 		bool mGroundPickerClicked;
 		int pickedOID;
 		int pickedGID;
-		float justSampledFade;
 
 
         void floodFill( int inX, int inY, int inOldBiome, int inNewBiome );
@@ -246,6 +246,7 @@ class EditorScenePage : public GamePage, public ActionListener {
 		void backup();
 		void undo();
 		void redo();
+        void flashTile( int x, int y );
         
         // clear everything but biome
         void clearCell( SceneCell *inCell );

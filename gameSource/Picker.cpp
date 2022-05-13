@@ -356,6 +356,27 @@ void Picker::actionPerformed( GUIComponent *inTarget ) {
     
         
     }
+    
+void Picker::nextPage() {
+    int skipAmount = PER_PAGE;
+
+    mSkip += skipAmount;
+    redoSearch( false );
+    addSearchToStack();
+
+    }
+    
+void Picker::prevPage() {
+    int skipAmount = PER_PAGE;
+
+    mSkip -= skipAmount;
+    if( mSkip < 0 ) {
+        mSkip = 0;
+        }
+    redoSearch( false );
+    addSearchToStack();
+        
+    }
 
 
 

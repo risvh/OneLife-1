@@ -25,12 +25,13 @@ int rectDim = 64*scale;
 
 int pickedOID;
 int pickedGID;
-float justSampledFade;
+std::vector<GridPos> fadingTiles;
+std::vector<float> fadingTilesFade;
 
-int mapSizeX = 200;
-int mapSizeY = 200;
-int initCenterX = 100;
-int initCenterY = 100;
+int mapSizeX = SettingsManager::getIntSetting( "townPlannerMapSizeX", 200 );
+int mapSizeY = SettingsManager::getIntSetting( "townPlannerMapSizeY", 200 );
+int initCenterX = SettingsManager::getIntSetting( "townPlannerInitCenterX", 100 );
+int initCenterY = SettingsManager::getIntSetting( "townPlannerInitCenterY", 100 );
 
 int spriteCount;
 bool mapChanged = false;
@@ -189,7 +190,6 @@ EditorScenePage::EditorScenePage()
           mShowUI( true ),
           mShowWhite( false ),
           mCursorFade( 1.0 ),
-		  justSampledFade( 0.0 ),
           mSceneW( mapSizeX ),
           mSceneH( mapSizeY ),
           mShiftX( -initCenterX ), 
@@ -342,6 +342,7 @@ EditorScenePage::EditorScenePage()
     clearCell( &mEmptyCell );
     
     mCopyBuffer = mEmptyCell;
+    mCopyFloorBuffer = mEmptyCell;
 
     
     mCells = NULL;
@@ -370,14 +371,18 @@ EditorScenePage::EditorScenePage()
 
     addKeyClassDescription( &mKeyLegend, "Ctrl + L - Click / Shft + WASD", "Move view" );
 	addKeyClassDescription( &mKeyLegend, "L - Click", "Add selected" );
-	addKeyClassDescription( &mKeyLegend, "None/Shft/Ctrl + R - Click", "Clear object + floor/biome" );
+	addKeyClassDescription( &mKeyLegend, "None/Ctrl/Shft + R - Click", "Clear object/floor/both" );
 	
 	addKeyDescription( &mKeyLegend, 'E', "Hide/show UI" );
 	addKeyClassDescription( &mKeyLegend, "Z/X", "Undo/redo" );
 	addKeyClassDescription( &mKeyLegend, "None/Shft/Ctrl + F", "Pick object/floor/biome" );
 	addKeyClassDescription( &mKeyLegend, "None/Shft + C", "Copy cell/area" );
     addKeyClassDescription( &mKeyLegend, "None/Shft + V", "Paste cell/area" );
-	addKeyClassDescription( &mKeyLegend, "Q", "Clear only floor" );
+	addKeyClassDescription( &mKeyLegend, "None/Shft + Q", "Clear cell/area" );
+    
+    addKeyClassDescription( &mKeyLegend, "Space", "Focus search" );
+    addKeyClassDescription( &mKeyLegend, "Enter", "Unfocus search" );
+    addKeyClassDescription( &mKeyLegend, "None/Shft + Tab", "Next/Prev search page" );
 
     addKeyClassDescription( &mKeyLegendG, "Shft + L - Click", "Flood fill" );
     addKeyClassDescription( &mKeyLegendC, "Shft + L - Click", "Add to Container" );
@@ -898,6 +903,12 @@ void EditorScenePage::queuesPopFront() {
     floorCellsAfterQueue.erase(floorCellsAfterQueue.begin());
     
     queueSize = touchedQueue.size();
+}
+
+void EditorScenePage::flashTile( int x, int y ) {
+    GridPos tile = { x, y };
+	fadingTiles.push_back( tile );
+    fadingTilesFade.push_back( 1.0 );
 }
 
 
@@ -2042,11 +2053,26 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
 
     startDrawingThroughStencil( true );
 	
-	justSampledFade -= 0.05;
-	if ( justSampledFade < 0 ) justSampledFade = 0.0;
-
-    setDrawColor( 1, 1, 1, 0.5 * justSampledFade );
-    drawSquare( curPos, rectDim );
+    for( int i=fadingTiles.size()-1; i>=0; i-- ) {
+        GridPos tile = fadingTiles[i];
+        float fade = fadingTilesFade[i];
+        
+        if( fade < 0 ) {
+            fadingTiles.erase(fadingTiles.begin() + i);
+            fadingTilesFade.erase(fadingTilesFade.begin() + i);
+            continue;
+        } else {
+            fadingTilesFade[i] -= 0.05;
+            fade = fadingTilesFade[i];
+        }
+        
+        doublePair tilePos = { tile.x * CELL_D*scale, -tile.y * CELL_D*scale };
+        tilePos.x += mShiftX * CELL_D*scale;
+        tilePos.y += mShiftY * CELL_D*scale;
+        
+        setDrawColor( 1, 1, 1, 0.5 * fade );
+        drawSquare( tilePos, rectDim );
+    }
     
     // setDrawColor( 1, 0, 0, 0.75 );
     // drawSquare( zeroPos, cursorDim*2 );
@@ -2374,11 +2400,13 @@ void EditorScenePage::step() {
         }
     }
 
-bool shiftDown = false;
+// bool shiftDown = false;
+// bool ctrlDown = false;
 
 void EditorScenePage::keyDown( unsigned char inASCII ) {
 	
-	if (isShiftKeyDown()) shiftDown = true;
+	// if (isShiftKeyDown()) shiftDown = true;
+    // if (isCommandKeyDown()) ctrlDown = true;
 	
     char skipCheckVisible = false;
     
@@ -2387,6 +2415,15 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
         // return to cursor control
         TextField::unfocusAll();
         }
+        
+    if( inASCII == 9 ) {
+        // tab
+        if( isShiftKeyDown() ) {
+            mObjectPicker.prevPage();
+        } else {
+            mObjectPicker.nextPage();
+        }
+    }
 
     if( TextField::isAnyFocused() ) {
         return;
@@ -2394,9 +2431,18 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
 		
     if( inASCII == 32 ) {
         // spacebar
-        mGroundPicker.unselectObject();
-		mObjectPicker.unselectObject();
+        
+        // mGroundPicker.unselectObject();
+		// mObjectPicker.unselectObject();
+        
+        if( !mObjectPicker.mSearchField.isFocused() ) {
+            mObjectPicker.mSearchField.focus();
+            mObjectPicker.mSearchField.setText("");
+        } else {
+            TextField::unfocusAll();
         }
+        
+    }
 		
     if( tolower(inASCII) == 'z' ) {
         if (mShowUI) undo();
@@ -2466,7 +2512,8 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
 				mGroundPicker.unselectObject();
 				pickedOID = tempOID;
 				pickedGID = -1;
-				justSampledFade = 1.0;
+                
+                flashTile( cursorGridX, cursorGridY );
 			}
 		}
 	}
@@ -2479,7 +2526,8 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
 				mGroundPicker.unselectObject();
 				pickedOID = 0;
 				pickedGID = tempBiome;
-				justSampledFade = 1.0;
+                
+                flashTile( cursorGridX, cursorGridY );
 			}
 		}
 	}
@@ -2490,36 +2538,50 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
 	if ( tolower(inASCII) == 'c' ) {
 		if ( !isShiftKeyDown() ) {
 			// copy
-			mCopyBuffer = *c;
+			mCopyBuffer = mCells[ cursorGridY ][ cursorGridX ];
+            mCopyFloorBuffer = mFloorCells[ cursorGridY ][ cursorGridX ];
 			copyAreaSet = false;
+            
+            flashTile( cursorGridX, cursorGridY );
 		} else {
-			if ( mCurY + copyAreaSize <= mSceneH && mCurX + copyAreaSize <= mSceneW ) {
-				for( int y=mCurY; y< mCurY + copyAreaSize; y++ ) {
-					for( int x=mCurX; x< mCurX + copyAreaSize; x++ ) {
+			if( cursorGridY + copyAreaSize <= mSceneH &&
+                cursorGridX + copyAreaSize <= mSceneW &&
+                cursorGridY >= 0 &&
+                cursorGridX >= 0
+                ) {
+				for( int y=cursorGridY; y< cursorGridY + copyAreaSize; y++ ) {
+					for( int x=cursorGridX; x< cursorGridX + copyAreaSize; x++ ) {
 						
-						copyArea[ y - mCurY ][ x - mCurX ] = mCells[ y ][ x ];
-						copyFloorArea[ y - mCurY ][ x - mCurX ] = mFloorCells[ y ][ x ];
-						copyPeopleArea[ y - mCurY ][ x - mCurX ] = mPersonCells[ y ][ x ];
+                        flashTile( x, y );
+                        
+						copyArea[ y - cursorGridY ][ x - cursorGridX ] = mCells[ y ][ x ];
+						copyFloorArea[ y - cursorGridY ][ x - cursorGridX ] = mFloorCells[ y ][ x ];
 					}
 				}
 				copyAreaSet = true;
 			}
+            
 		}
 	}
 	if( tolower(inASCII) == 'v' ) {
         // paste
         if( copyAreaSet && isShiftKeyDown() ) {
-			if ( mCurY + copyAreaSize <= mSceneH && mCurX + copyAreaSize <= mSceneW ) {
-				for( int y=mCurY; y< mCurY + copyAreaSize; y++ ) {
-					for( int x=mCurX; x< mCurX + copyAreaSize; x++ ) {
+			if( cursorGridY + copyAreaSize <= mSceneH &&
+                cursorGridX + copyAreaSize <= mSceneW &&
+                cursorGridY >= 0 &&
+                cursorGridX >= 0
+                ) {
+				for( int y=cursorGridY; y< cursorGridY + copyAreaSize; y++ ) {
+					for( int x=cursorGridX; x< cursorGridX + copyAreaSize; x++ ) {
+                        
+                        flashTile( x, y );
                         
                         mark( x, y, 0 );
                         
-						copyArea[ y - mCurY ][ x - mCurX ].biome = mCells[ y ][ x ].biome;
+						copyArea[ y - cursorGridY ][ x - cursorGridX ].biome = mCells[ y ][ x ].biome;
 					
-						mCells[ y ][ x ] = copyArea[ y - mCurY ][ x - mCurX ];
-						mFloorCells[ y ][ x ] = copyFloorArea[ y - mCurY ][ x - mCurX ];
-						mPersonCells[ y ][ x ] = copyPeopleArea[ y - mCurY ][ x - mCurX ];
+						mCells[ y ][ x ] = copyArea[ y - cursorGridY ][ x - cursorGridX ];
+						mFloorCells[ y ][ x ] = copyFloorArea[ y - cursorGridY ][ x - cursorGridX ];
                         
                         mark( x, y, 1 );
                         
@@ -2531,28 +2593,60 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
 		if ( !isShiftKeyDown() ) {
 			if( mCopyBuffer.oID > 0 &&
 				getObject( mCopyBuffer.oID )->person ) {
-				*p = mCopyBuffer;
+				// *p = mCopyBuffer;
 			} else {
-				mark( mCurX, mCurY, 0 );
-				mCopyBuffer.biome = c->biome;
-				*c = mCopyBuffer;
-                mark( mCurX, mCurY, 1 );
+				mark( cursorGridX, cursorGridY, 0 );
+				// mCopyBuffer.biome = c->biome;
+                int oldBiome = mCells[ cursorGridY ][ cursorGridX ].biome;
+				mCells[ cursorGridY ][ cursorGridX ] = mCopyBuffer;
+                mCells[ cursorGridY ][ cursorGridX ].biome = oldBiome;
+                mFloorCells[ cursorGridY ][ cursorGridX ] = mCopyFloorBuffer;
+                mark( cursorGridX, cursorGridY, 1 );
                 backup();
+                
+                flashTile( cursorGridX, cursorGridY );
 			}
 		}
         restartAllMoves();
 	}
     if ( tolower(inASCII) == 'q' ) {
-		mark( mCurX, mCurY, 0 );
-        // clearCell( c );
-        // clearCell( p );
-        clearCell( f );
-        mark( mCurX, mCurY, 1 );
-        backup();
+		if ( isShiftKeyDown() ) {
+			if( cursorGridY + copyAreaSize <= mSceneH &&
+                cursorGridX + copyAreaSize <= mSceneW &&
+                cursorGridY >= 0 &&
+                cursorGridX >= 0
+                ) {
+				for( int y=cursorGridY; y< cursorGridY + copyAreaSize; y++ ) {
+					for( int x=cursorGridX; x< cursorGridX + copyAreaSize; x++ ) {
+                        
+                        flashTile( x, y );
+                        
+                        mark( x, y, 0 );
+                        
+                        clearCell( &(mCells[ y ][ x ]) );
+                        clearCell( &(mFloorCells[ y ][ x ]) );
+                        mCells[ y ][ x ].biome = -1;
+                        
+                        mark( x, y, 1 );
+                        
+					}
+				}
+                backup();
+			}
+        } else {
+            mark( cursorGridX, cursorGridY, 0 );
+            
+            clearCell( &(mCells[ cursorGridY ][ cursorGridX ]) );
+            clearCell( &(mFloorCells[ cursorGridY ][ cursorGridX ]) );
+            mCells[ cursorGridY ][ cursorGridX ].biome = -1;
+            
+            mark( cursorGridX, cursorGridY, 1 );
+            backup();
+        }
     }
     if( tolower(inASCII) == 'o' ) {
-        mZeroX = mCurX;
-        mZeroY = mCurY;
+        mZeroX = cursorGridX;
+        mZeroY = cursorGridY;
     }
 		
 	checkVisible();
@@ -2759,7 +2853,8 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
 
 void EditorScenePage::keyUp( unsigned char inASCII ) {
 	
-	// shiftDown = isShiftKeyDown();
+	// shiftDown = false;
+    // ctrlDown = false;
 	
     if( TextField::isAnyFocused() ) {
         return;
@@ -2773,10 +2868,10 @@ void EditorScenePage::keyUp( unsigned char inASCII ) {
 
 
     if( inASCII == 'd' || inASCII == 'D' ) {
-        mLittleDheld = false;
-        mBigDheld = false;
+        // mLittleDheld = false;
+        // mBigDheld = false;
             
-        checkVisible();
+        // checkVisible();
         }
     }
 
@@ -2903,9 +2998,12 @@ void EditorScenePage::pointerDown( float inX, float inY ) {
 			mCurY = 0;
 		}
 		
+        checkVisible();
+        
+        return;
 	}
 	
-	if ( mShowUI && !isCommandKeyDown() ) {
+	if ( mShowUI ) {
 		
 		if( x < 0 || x >= mSceneW || y >= mSceneH || y < 0 ) {
 			checkVisible();
@@ -2978,10 +3076,30 @@ void EditorScenePage::pointerDown( float inX, float inY ) {
 				}				
 			}
 		} else {
-			mark( x, y, 0 );
-			clearCell(c);
-			if( isShiftKeyDown() ) clearCell(f);
-			if( isCommandKeyDown() ) c->biome = -1;
+            mark( x, y, 0 );
+            
+            bool clearObj = false;
+            bool clearFloor = false;
+            bool clearBiome = false;
+
+            if( isCommandKeyDown() && isShiftKeyDown() ) {
+                clearObj = true;
+                clearFloor = true;
+                clearBiome = true;
+            } else if( isCommandKeyDown() ) {
+                clearFloor = true;
+            } else if( isShiftKeyDown() ) {
+                clearObj = true;
+                clearFloor = true;
+            } else {
+                clearObj = true;                
+            }
+            
+            int oldBiome = c->biome;
+            if( clearObj ) clearCell(c);
+            if( clearFloor ) clearCell(f);
+            if( !clearBiome ) c->biome = oldBiome;
+            
             mark( x, y, 1 );
 		}
 		
@@ -3093,10 +3211,30 @@ void EditorScenePage::pointerDrag( float inX, float inY ) {
 		}
 		
 	} else {
-		mark( x, y, 0 );
-		clearCell(c);
-		if( isShiftKeyDown() ) clearCell(f);
-		if( isCommandKeyDown() ) c->biome = -1;
+        mark( x, y, 0 );
+        
+        bool clearObj = false;
+        bool clearFloor = false;
+        bool clearBiome = false;
+
+        if( isCommandKeyDown() && isShiftKeyDown() ) {
+            clearObj = true;
+            clearFloor = true;
+            clearBiome = true;
+        } else if( isCommandKeyDown() ) {
+            clearFloor = true;
+        } else if( isShiftKeyDown() ) {
+            clearObj = true;
+            clearFloor = true;
+        } else {
+            clearObj = true;                
+        }
+        
+        int oldBiome = c->biome;
+        if( clearObj ) clearCell(c);
+        if( clearFloor ) clearCell(f);
+        if( !clearBiome ) c->biome = oldBiome;
+        
         mark( x, y, 1 );
 	}
 	// checkVisible();
