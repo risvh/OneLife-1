@@ -2443,7 +2443,11 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
         }
         
     }
-		
+    
+    if ( tolower(inASCII) == 'e' ) {
+        mShowUI = ! mShowUI;
+        skipDrawingSubComponents( ! mShowUI );
+    }
     if( tolower(inASCII) == 'z' ) {
         if (mShowUI) undo();
         }
@@ -2457,6 +2461,12 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
         // don't checkVisible, because it makes cur cell border appear
         return;
         }
+        
+    if( cursorGridX < 0 ||
+        cursorGridY < 0 ||
+        cursorGridX >= mSceneW ||
+        cursorGridY >= mSceneH )
+        return;
 
     SceneCell *c = getCurrentCell();
     SceneCell *p = getCurrentPersonCell();
@@ -2531,10 +2541,6 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
 			}
 		}
 	}
-    if ( tolower(inASCII) == 'e' ) {
-        mShowUI = ! mShowUI;
-        skipDrawingSubComponents( ! mShowUI );
-    }
 	if ( tolower(inASCII) == 'c' ) {
 		if ( !isShiftKeyDown() ) {
 			// copy
