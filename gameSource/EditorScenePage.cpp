@@ -2418,28 +2418,32 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
         
     if( inASCII == 9 ) {
         // tab
-        if( isShiftKeyDown() ) {
-            mObjectPicker.prevPage();
-        } else {
-            mObjectPicker.nextPage();
+        if ( mShowUI ) {
+            if( isShiftKeyDown() ) {
+                mObjectPicker.prevPage();
+            } else {
+                mObjectPicker.nextPage();
+            }
         }
     }
 
     if( TextField::isAnyFocused() ) {
+        mShowUI = true;
         return;
         }
 		
     if( inASCII == 32 ) {
         // spacebar
-        
-        // mGroundPicker.unselectObject();
-		// mObjectPicker.unselectObject();
-        
-        if( !mObjectPicker.mSearchField.isFocused() ) {
-            mObjectPicker.mSearchField.focus();
-            mObjectPicker.mSearchField.setText("");
-        } else {
-            TextField::unfocusAll();
+        if ( mShowUI ) {
+            // mGroundPicker.unselectObject();
+            // mObjectPicker.unselectObject();
+            
+            if( !mObjectPicker.mSearchField.isFocused() ) {
+                mObjectPicker.mSearchField.focus();
+                mObjectPicker.mSearchField.setText("");
+            } else {
+                TextField::unfocusAll();
+            }
         }
         
     }
@@ -2542,117 +2546,124 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
 		}
 	}
 	if ( tolower(inASCII) == 'c' ) {
-		if ( !isShiftKeyDown() ) {
-			// copy
-			mCopyBuffer = mCells[ cursorGridY ][ cursorGridX ];
-            mCopyFloorBuffer = mFloorCells[ cursorGridY ][ cursorGridX ];
-			copyAreaSet = false;
-            
-            flashTile( cursorGridX, cursorGridY );
-		} else {
-			if( cursorGridY + copyAreaSize <= mSceneH &&
-                cursorGridX + copyAreaSize <= mSceneW &&
-                cursorGridY >= 0 &&
-                cursorGridX >= 0
-                ) {
-				for( int y=cursorGridY; y< cursorGridY + copyAreaSize; y++ ) {
-					for( int x=cursorGridX; x< cursorGridX + copyAreaSize; x++ ) {
-						
-                        flashTile( x, y );
-                        
-						copyArea[ y - cursorGridY ][ x - cursorGridX ] = mCells[ y ][ x ];
-						copyFloorArea[ y - cursorGridY ][ x - cursorGridX ] = mFloorCells[ y ][ x ];
-					}
-				}
-				copyAreaSet = true;
-			}
-            
-		}
-	}
-	if( tolower(inASCII) == 'v' ) {
-        // paste
-        if( copyAreaSet && isShiftKeyDown() ) {
-			if( cursorGridY + copyAreaSize <= mSceneH &&
-                cursorGridX + copyAreaSize <= mSceneW &&
-                cursorGridY >= 0 &&
-                cursorGridX >= 0
-                ) {
-				for( int y=cursorGridY; y< cursorGridY + copyAreaSize; y++ ) {
-					for( int x=cursorGridX; x< cursorGridX + copyAreaSize; x++ ) {
-                        
-                        flashTile( x, y );
-                        
-                        mark( x, y, 0 );
-                        
-						copyArea[ y - cursorGridY ][ x - cursorGridX ].biome = mCells[ y ][ x ].biome;
-					
-						mCells[ y ][ x ] = copyArea[ y - cursorGridY ][ x - cursorGridX ];
-						mFloorCells[ y ][ x ] = copyFloorArea[ y - cursorGridY ][ x - cursorGridX ];
-                        
-                        mark( x, y, 1 );
-                        
-					}
-				}
-                backup();
-			}
-		}
-		if ( !isShiftKeyDown() ) {
-			if( mCopyBuffer.oID > 0 &&
-				getObject( mCopyBuffer.oID )->person ) {
-				// *p = mCopyBuffer;
-			} else {
-				mark( cursorGridX, cursorGridY, 0 );
-				// mCopyBuffer.biome = c->biome;
-                int oldBiome = mCells[ cursorGridY ][ cursorGridX ].biome;
-				mCells[ cursorGridY ][ cursorGridX ] = mCopyBuffer;
-                mCells[ cursorGridY ][ cursorGridX ].biome = oldBiome;
-                mFloorCells[ cursorGridY ][ cursorGridX ] = mCopyFloorBuffer;
-                mark( cursorGridX, cursorGridY, 1 );
-                backup();
+        if ( mShowUI ) {
+            if ( !isShiftKeyDown() ) {
+                // copy
+                mCopyBuffer = mCells[ cursorGridY ][ cursorGridX ];
+                mCopyFloorBuffer = mFloorCells[ cursorGridY ][ cursorGridX ];
+                copyAreaSet = false;
                 
                 flashTile( cursorGridX, cursorGridY );
-			}
-		}
-        restartAllMoves();
+            } else {
+                if( cursorGridY + copyAreaSize <= mSceneH &&
+                    cursorGridX + copyAreaSize <= mSceneW &&
+                    cursorGridY >= 0 &&
+                    cursorGridX >= 0
+                    ) {
+                    for( int y=cursorGridY; y< cursorGridY + copyAreaSize; y++ ) {
+                        for( int x=cursorGridX; x< cursorGridX + copyAreaSize; x++ ) {
+                            
+                            flashTile( x, y );
+                            
+                            copyArea[ y - cursorGridY ][ x - cursorGridX ] = mCells[ y ][ x ];
+                            copyFloorArea[ y - cursorGridY ][ x - cursorGridX ] = mFloorCells[ y ][ x ];
+                        }
+                    }
+                    copyAreaSet = true;
+                }
+            }
+        }
+	}
+	if( tolower(inASCII) == 'v' ) {
+        if ( mShowUI ) {
+            // paste
+            if( copyAreaSet && isShiftKeyDown() ) {
+                if( cursorGridY + copyAreaSize <= mSceneH &&
+                    cursorGridX + copyAreaSize <= mSceneW &&
+                    cursorGridY >= 0 &&
+                    cursorGridX >= 0
+                    ) {
+                    for( int y=cursorGridY; y< cursorGridY + copyAreaSize; y++ ) {
+                        for( int x=cursorGridX; x< cursorGridX + copyAreaSize; x++ ) {
+                            
+                            flashTile( x, y );
+                            
+                            mark( x, y, 0 );
+                            
+                            copyArea[ y - cursorGridY ][ x - cursorGridX ].biome = mCells[ y ][ x ].biome;
+                        
+                            mCells[ y ][ x ] = copyArea[ y - cursorGridY ][ x - cursorGridX ];
+                            mFloorCells[ y ][ x ] = copyFloorArea[ y - cursorGridY ][ x - cursorGridX ];
+                            
+                            mark( x, y, 1 );
+                            
+                        }
+                    }
+                    backup();
+                }
+            }
+            if ( !isShiftKeyDown() ) {
+                if( mCopyBuffer.oID > 0 &&
+                    getObject( mCopyBuffer.oID )->person ) {
+                    // *p = mCopyBuffer;
+                } else {
+                    mark( cursorGridX, cursorGridY, 0 );
+                    // mCopyBuffer.biome = c->biome;
+                    int oldBiome = mCells[ cursorGridY ][ cursorGridX ].biome;
+                    mCells[ cursorGridY ][ cursorGridX ] = mCopyBuffer;
+                    mCells[ cursorGridY ][ cursorGridX ].biome = oldBiome;
+                    mFloorCells[ cursorGridY ][ cursorGridX ] = mCopyFloorBuffer;
+                    mark( cursorGridX, cursorGridY, 1 );
+                    backup();
+                    
+                    flashTile( cursorGridX, cursorGridY );
+                }
+            }
+            restartAllMoves();
+        }
 	}
     if ( tolower(inASCII) == 'q' ) {
-		if ( isShiftKeyDown() ) {
-			if( cursorGridY + copyAreaSize <= mSceneH &&
-                cursorGridX + copyAreaSize <= mSceneW &&
-                cursorGridY >= 0 &&
-                cursorGridX >= 0
-                ) {
-				for( int y=cursorGridY; y< cursorGridY + copyAreaSize; y++ ) {
-					for( int x=cursorGridX; x< cursorGridX + copyAreaSize; x++ ) {
-                        
-                        flashTile( x, y );
-                        
-                        mark( x, y, 0 );
-                        
-                        clearCell( &(mCells[ y ][ x ]) );
-                        clearCell( &(mFloorCells[ y ][ x ]) );
-                        mCells[ y ][ x ].biome = -1;
-                        
-                        mark( x, y, 1 );
-                        
-					}
-				}
+        if ( mShowUI ) {
+            if ( isShiftKeyDown() ) {
+                if( cursorGridY + copyAreaSize <= mSceneH &&
+                    cursorGridX + copyAreaSize <= mSceneW &&
+                    cursorGridY >= 0 &&
+                    cursorGridX >= 0
+                    ) {
+                    for( int y=cursorGridY; y< cursorGridY + copyAreaSize; y++ ) {
+                        for( int x=cursorGridX; x< cursorGridX + copyAreaSize; x++ ) {
+                            
+                            flashTile( x, y );
+                            
+                            mark( x, y, 0 );
+                            
+                            clearCell( &(mCells[ y ][ x ]) );
+                            clearCell( &(mFloorCells[ y ][ x ]) );
+                            mCells[ y ][ x ].biome = -1;
+                            
+                            mark( x, y, 1 );
+                            
+                        }
+                    }
+                    backup();
+                }
+            } else {
+                mark( cursorGridX, cursorGridY, 0 );
+                
+                clearCell( &(mCells[ cursorGridY ][ cursorGridX ]) );
+                clearCell( &(mFloorCells[ cursorGridY ][ cursorGridX ]) );
+                mCells[ cursorGridY ][ cursorGridX ].biome = -1;
+                
+                mark( cursorGridX, cursorGridY, 1 );
                 backup();
-			}
-        } else {
-            mark( cursorGridX, cursorGridY, 0 );
-            
-            clearCell( &(mCells[ cursorGridY ][ cursorGridX ]) );
-            clearCell( &(mFloorCells[ cursorGridY ][ cursorGridX ]) );
-            mCells[ cursorGridY ][ cursorGridX ].biome = -1;
-            
-            mark( cursorGridX, cursorGridY, 1 );
-            backup();
+            }
         }
     }
     if( tolower(inASCII) == 'o' ) {
-        mZeroX = cursorGridX;
-        mZeroY = cursorGridY;
+        if ( mShowUI ) {
+            mZeroX = cursorGridX;
+            mZeroY = cursorGridY;
+        }
     }
 		
 	checkVisible();
