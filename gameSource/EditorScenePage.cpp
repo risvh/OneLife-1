@@ -28,10 +28,12 @@ int pickedGID;
 std::vector<GridPos> fadingTiles;
 std::vector<float> fadingTilesFade;
 
-int mapSizeX = SettingsManager::getIntSetting( "townPlannerMapSizeX", 200 );
-int mapSizeY = SettingsManager::getIntSetting( "townPlannerMapSizeY", 200 );
-int initCenterX = SettingsManager::getIntSetting( "townPlannerInitCenterX", 100 );
-int initCenterY = SettingsManager::getIntSetting( "townPlannerInitCenterY", 100 );
+int mapSizeX = 200;
+int mapSizeY = 200;
+int initCenterX = 100;
+int initCenterY = 100;
+
+int queueCapacity = 8;
 
 int spriteCount;
 bool mapChanged = false;
@@ -388,6 +390,14 @@ EditorScenePage::EditorScenePage()
     addKeyClassDescription( &mKeyLegendC, "Shft + L - Click", "Add to Container" );
     // addKeyClassDescription( &mKeyLegendP, "R-Click", "Add Clothing/Held" );
     // addKeyClassDescription( &mKeyLegendF, "R-Click", "Add Floor" );
+    
+    mapSizeX = SettingsManager::getIntSetting( "townPlannerMapSizeX", 200 );
+    mapSizeY = SettingsManager::getIntSetting( "townPlannerMapSizeY", 200 );
+    initCenterX = SettingsManager::getIntSetting( "townPlannerInitCenterX", 100 );
+    initCenterY = SettingsManager::getIntSetting( "townPlannerInitCenterY", 100 );
+    
+    queueCapacity = SettingsManager::getIntSetting( "townPlannerQueueCapacity", 8 );
+    
     }
 
 
@@ -778,7 +788,7 @@ std::vector<std::vector<SceneCell>> floorCellsQueue;
 std::vector<std::vector<SceneCell>> cellsAfterQueue;
 std::vector<std::vector<SceneCell>> floorCellsAfterQueue;
 int queueIndex = 0;
-int queueCapacity = SettingsManager::getIntSetting( "townPlannerQueueCapacity", 8 );
+// int queueCapacity = 8;
 int queueSize = 0;
 
 std::vector<GridPos> currentTouchedTiles;
