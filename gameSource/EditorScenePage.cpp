@@ -3377,21 +3377,30 @@ File *EditorScenePage::getSceneFile( int inSceneID ) {
 // char *name = autoSprintf( "%d.txt", inSceneID );
     int numFiles = -1;
     File **SceneDirectoryList = mScenesFolder.getChildFilesSorted(&numFiles);
-    if ( inSceneID >= numFiles ) {
-        return NULL;
+    File *f = NULL;
+    if ( inSceneID >= numFiles || inSceneID < 0 ) {
+        do {
+            char *name = autoSprintf( "Editor_%d.txt", inSceneID );
+            f = mScenesFolder.getChildFile( name );
+            inSceneID++;
+            delete [] name;
+            } while ( f->exists() );
+        }
+    else {
+
+        char *name = SceneDirectoryList[inSceneID]->getFileName();
+
+        f = mScenesFolder.getChildFile( name );
+        delete [] name;
         }
 
-    char *name = SceneDirectoryList[inSceneID]->getFileName();
-
-    File *f = mScenesFolder.getChildFile( name );
-    delete [] name;
     for ( int i=0; i<numFiles; i++) {
         delete SceneDirectoryList[i];
         }
 
     delete [] SceneDirectoryList;
     return f;
-    }
+}
 
 
 
