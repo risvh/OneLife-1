@@ -591,8 +591,9 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
             }
 
         mSceneID += jump;
-        while( mSceneID < mNextSceneNumber &&
-               ! tryLoadScene( mSceneID ) ) {
+        while( ! tryLoadScene( mSceneID) &&
+		mSceneID < mNextSceneNumber
+               ) {
             mSceneID++;
             }
         mReplaceButton.setVisible( true );
@@ -3696,6 +3697,10 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
     File *f = getSceneFile( inSceneID );
     
     char r = false;
+    if( f == NULL) {
+	clearScene();
+        return r;
+    }
     
     if( f->exists() && ! f->isDirectory() ) {
         printf( "Trying to load scene %d\n", inSceneID );
@@ -3714,64 +3719,72 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
             
             char **lines = split( fileText, "\n", &numLines );
             delete [] fileText;
-            
-            int next = 0;
-            
-            
-            int w = mSceneW;
-            int h = mSceneH;
-            
-            sscanf( lines[next], "w=%d", &w );
-            next++;
-            sscanf( lines[next], "h=%d", &h );
-            next++;
-            
-            if( w != mSceneW || h != mSceneH ) {
-                resizeGrid( h, w );
-                }
-
-            if( strstr( lines[next], "origin" ) != NULL ) {
-                sscanf( lines[next], "origin=%d,%d", &mZeroX, &mZeroY );
-                next++;
-                }
-            
-            char floorPresent = false;
-            
-            if( strstr( lines[next], "floorPresent" ) != NULL ) {
-                floorPresent = true;
-                next++;
-                }
-
             clearScene();
-            
-            int numRead = 0;
-            
-            int x, y;
-			
-			if (next < numLines) {
-				numRead = sscanf( lines[next], "x=%d,y=%d", &x, &y );
-				next++;
-			}
-            
-            while( numRead == 2 ) {
-                SceneCell *c = &( mCells[y][x] );
-                SceneCell *p = &( mPersonCells[y][x] );
-                SceneCell *f = &( mFloorCells[y][x] );
-                    
-                next = scanCell( lines, next, c );
-                next = scanCell( lines, next, p );
-                
-                if( floorPresent ) {
-                    next = scanCell( lines, next, f );
+
+	    if( numLines > 1 ) {
+
+                int next = 0;
+
+
+                int w = mSceneW;
+                int h = mSceneH;
+
+		if( next >= numLines ) {  return r; }
+                sscanf( lines[next], "w=%d", &w );
+                next++;
+		if( next >= numLines ) {  return r; }
+                sscanf( lines[next], "h=%d", &h );
+                next++;
+
+                if( w != mSceneW || h != mSceneH ) {
+                    resizeGrid( h, w );
                     }
+
+		if( next >= numLines ) {  return r; }
+                if( strstr( lines[next], "origin" ) != NULL ) {
+                    sscanf( lines[next], "origin=%d,%d", &mZeroX, &mZeroY );
+                    next++;
+                    }
+
+                char floorPresent = false;
                 
-                numRead = 0;
+		if( next >= numLines ) {  return r; }
+                if( strstr( lines[next], "floorPresent" ) != NULL ) {
+                    floorPresent = true;
+                    next++;
+                    }
+
+                clearScene();
                 
-                if( next < numLines ) {    
+                int numRead = 0;
+                
+                int x, y;
+
+                if (next < numLines) {
                     numRead = sscanf( lines[next], "x=%d,y=%d", &x, &y );
                     next++;
                     }
-                }
+
+                while( numRead == 2 ) {
+                    SceneCell *c = &( mCells[y][x] );
+                    SceneCell *p = &( mPersonCells[y][x] );
+                    SceneCell *f = &( mFloorCells[y][x] );
+
+                    next = scanCell( lines, next, c );
+                    next = scanCell( lines, next, p );
+
+                    if( floorPresent ) {
+                        next = scanCell( lines, next, f );
+                        }
+
+                    numRead = 0;
+
+                    if( next < numLines ) {
+                        numRead = sscanf( lines[next], "x=%d,y=%d", &x, &y );
+                        next++;
+                        }
+                    }
+	        }
             
             for( int i=0; i<numLines; i++ ) {
                 delete [] lines[i];
