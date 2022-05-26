@@ -364,7 +364,13 @@ EditorScenePage::EditorScenePage()
     if( mScenesFolder.isDirectory() ) {
         mNextFile = mScenesFolder.getChildFile( "next.txt" );
         
-        mNextSceneNumber = mNextFile->readFileIntContents( 0 );
+//        mNextSceneNumber = mNextFile->readFileIntContents( 0 );
+        File **sceneFiles = mScenesFolder.getChildFiles( &mNextSceneNumber );
+	for (int i = 0; i<mNextSceneNumber; i++) {
+		delete sceneFiles[i];
+	}
+	delete [] sceneFiles;
+	mNextSceneNumber--;
         }
     
 
@@ -2309,12 +2315,20 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
 			delete [] s;
 		} else {
 			if (mapChanged) {
-				char *s = autoSprintf( "Scene %d*", mSceneID );
+				File *f = getSceneFile( mSceneID );
+				char *n = f->getFileName();
+				char *s = autoSprintf( "Scene %s*", n );
 				drawOutlineString( s, pos, alignCenter );
+				delete [] n;
+				delete f;
 				delete [] s;
 			} else {
-				char *s = autoSprintf( "Scene %d", mSceneID );
+				File *f = getSceneFile( mSceneID );
+				char *n = f->getFileName();
+				char *s = autoSprintf( "Scene %s*", n );
 				drawOutlineString( s, pos, alignCenter );
+				delete [] n;
+				delete f;
 				delete [] s;
 			}
 		}
@@ -3360,10 +3374,22 @@ void EditorScenePage::specialKeyDown( int inKeyCode ) {
 
 
 File *EditorScenePage::getSceneFile( int inSceneID ) {
-    char *name = autoSprintf( "%d.txt", inSceneID );
+// char *name = autoSprintf( "%d.txt", inSceneID );
+    int numFiles = -1;
+    File **SceneDirectoryList = mScenesFolder.getChildFilesSorted(&numFiles);
+    if ( inSceneID >= numFiles ) {
+        return NULL;
+        }
+
+    char *name = SceneDirectoryList[inSceneID]->getFileName();
+
     File *f = mScenesFolder.getChildFile( name );
     delete [] name;
-    
+    for ( int i=0; i<numFiles; i++) {
+        delete SceneDirectoryList[i];
+        }
+
+    delete [] SceneDirectoryList;
     return f;
     }
 
@@ -3825,25 +3851,13 @@ void EditorScenePage::checkNextPrevVisible() {
         mPrevSceneButton.setVisible( num > 1 );        
         }
     else {
-        for( int i=0; i<num; i++ ) {
-            int id = -1;
-            char *name = cf[i]->getFileName();
-            
-            sscanf( name, "%d.txt", &id );
-            
-            if( id > -1 ) {
-                
-                if( id > mSceneID ) {
-                    mNextSceneButton.setVisible( true );
-                    }
-                else if( id < mSceneID ) {
-                    mPrevSceneButton.setVisible( true );
-                    }
-                }
-            delete [] name;
-            }
+	if( mSceneID < num - 1 ) {
+		mNextSceneButton.setVisible( true );
         }
-    
+	if( mSceneID > 0 && num > 0 ) {
+		mPrevSceneButton.setVisible( true );
+	}
+    }
     
         
     for( int i=0; i<num; i++ ) {
