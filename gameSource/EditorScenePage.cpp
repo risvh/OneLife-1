@@ -3399,6 +3399,11 @@ File *EditorScenePage::getSceneFile( int inSceneID ) {
     if ( inSceneID >= numFiles || inSceneID < 0 ) {
         do { // If we're not in the bounds of that list, we want a NEW file.
             char *name = autoSprintf( "Editor_%d.txt", inSceneID );
+	    if( f != NULL ) {
+		delete f;
+		f = NULL;
+	        }
+
             f = mScenesFolder.getChildFile( name );
             inSceneID++;
             delete [] name;
