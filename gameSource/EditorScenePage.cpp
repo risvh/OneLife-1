@@ -503,9 +503,6 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
 
         writeSceneToFile( mNextSceneNumber );
         
-        mNextSceneNumber++;
-        mNextFile->writeToFile( mNextSceneNumber );
-        
         mDeleteButton.setVisible( true );
         mReplaceButton.setVisible( true );
         mNextSceneButton.setVisible( false );
@@ -3578,6 +3575,9 @@ void EditorScenePage::writeSceneToFile( int inIDToUse ) {
 
     f->writeToFile( contents );
     if( inIDToUse == mNextSceneNumber ) {
+        mNextSceneNumber++;
+        mNextFile->writeToFile( mNextSceneNumber );
+        
 	char *fileName = f->getFileName();
 	mSceneID = getSceneFileID( fileName );
 	delete [] fileName;
