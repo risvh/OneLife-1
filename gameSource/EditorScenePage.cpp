@@ -3877,6 +3877,7 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
 void EditorScenePage::checkNextPrevVisible() {
     int num = 0;
     File **cf = mScenesFolder.getChildFiles( &num );
+    mNextSceneNumber = num; // Keep mNextSceneNumber out of bounds, so new files will be new.
         
     mNextSceneButton.setVisible( false );
     mPrevSceneButton.setVisible( false );
