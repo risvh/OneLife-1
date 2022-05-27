@@ -616,7 +616,7 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
             jump *= 5;
             }
         
-        if( mSceneID == -1 ) {
+        if( mSceneID < 0 ) {
             mSceneID = mNextSceneNumber;
             }
         mSceneID -= jump;
