@@ -370,7 +370,6 @@ EditorScenePage::EditorScenePage()
 		delete sceneFiles[i];
 	}
 	delete [] sceneFiles;
-	mNextSceneNumber--;
         }
     
 
@@ -621,8 +620,8 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
             mSceneID = mNextSceneNumber;
             }
         mSceneID -= jump;
-        while( mSceneID >= 0 &&
-               ! tryLoadScene( mSceneID ) ) {
+        while( ! tryLoadScene( mSceneID ) &&
+	       mSceneID > 0 ) {
             mSceneID--;
             }
         mReplaceButton.setVisible( true );
@@ -3857,7 +3856,7 @@ void EditorScenePage::checkNextPrevVisible() {
     if( mSceneID == -1 ) {
         mNextSceneButton.setVisible( false );
         
-        mPrevSceneButton.setVisible( num > 1 );        
+        mPrevSceneButton.setVisible( num >= 1 );
         }
     else {
 	if( mSceneID < num - 1 ) {
