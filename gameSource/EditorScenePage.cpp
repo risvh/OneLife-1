@@ -363,13 +363,16 @@ EditorScenePage::EditorScenePage()
     mNextSceneNumber = 0;
     if( mScenesFolder.isDirectory() ) {
         mNextFile = mScenesFolder.getChildFile( "next.txt" );
+        if ( ! mNextFile->exists() ) {
+            mNextFile->writeToFile( mNextSceneNumber );
+            }
         
 //        mNextSceneNumber = mNextFile->readFileIntContents( 0 );
         File **sceneFiles = mScenesFolder.getChildFiles( &mNextSceneNumber );
 	for (int i = 0; i<mNextSceneNumber; i++) {
-		delete sceneFiles[i];
-	}
-	delete [] sceneFiles;
+            delete sceneFiles[i];
+	    }
+        delete [] sceneFiles;
         }
     
 
