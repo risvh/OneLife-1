@@ -256,6 +256,7 @@ class EditorScenePage : public GamePage, public ActionListener {
 
         void restartAllMoves();
         
+        int getSceneFileID( char *fileName );
 
         File *getSceneFile( int inSceneID );
         

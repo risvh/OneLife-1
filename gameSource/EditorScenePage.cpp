@@ -502,7 +502,6 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
     else if( inTarget == &mSaveNewButton ) {
 
         writeSceneToFile( mNextSceneNumber );
-        mSceneID = mNextSceneNumber;
         
         mNextSceneNumber++;
         mNextFile->writeToFile( mNextSceneNumber );
@@ -3371,6 +3370,24 @@ void EditorScenePage::specialKeyDown( int inKeyCode ) {
     }
 
 
+int EditorScenePage::getSceneFileID( char *fileName ) {
+    int numFiles = -1;
+    File **SceneDirectoryList = mScenesFolder.getChildFilesSorted(&numFiles);
+    int ret = -1;
+
+    for( int i = 0; i < numFiles && ret == -1; i++) {
+	char *thisFileName = SceneDirectoryList[i]->getFileName();
+	if ( strcmp(thisFileName, fileName) == 0 ) {
+	    ret = i;
+	    }
+	    delete [] thisFileName;
+        }
+    for( int i = 0; i < numFiles; i++ ) {
+        delete SceneDirectoryList[i];
+        }
+    delete [] SceneDirectoryList;
+    return ret;
+}
 
 File *EditorScenePage::getSceneFile( int inSceneID ) {
 // char *name = autoSprintf( "%d.txt", inSceneID );
@@ -3560,6 +3577,11 @@ void EditorScenePage::writeSceneToFile( int inIDToUse ) {
     lines.deallocateStringElements();
 
     f->writeToFile( contents );
+    if( inIDToUse == mNextSceneNumber ) {
+	char *fileName = f->getFileName();
+	mSceneID = getSceneFileID( fileName );
+	delete [] fileName;
+    }
     delete [] contents;
 
     delete f;
