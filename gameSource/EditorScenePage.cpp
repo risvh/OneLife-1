@@ -3780,7 +3780,7 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
             delete [] fileText;
             clearScene();
 
-	    if( numLines > 1 ) {
+	    if( numLines > 1 ) { // One line files obviously aren't real.
 
                 int next = 0;
 
@@ -3788,31 +3788,35 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
                 int w = mSceneW;
                 int h = mSceneH;
 
-		if( next >= numLines ) {  return r; }
-                sscanf( lines[next], "w=%d", &w );
-                next++;
-		if( next >= numLines ) {  return r; }
-                sscanf( lines[next], "h=%d", &h );
-                next++;
+		if( next < numLines ) { // if we ever look at lines[next] after running out of lines
+                    sscanf( lines[next], "w=%d", &w );    // we will have a segfault.
+                    next++;
+                    }
+
+		if( next < numLines ) {
+                    sscanf( lines[next], "h=%d", &h );
+                    next++;
+                    }
 
                 if( w != mSceneW || h != mSceneH ) {
                     resizeGrid( h, w );
                     }
 
-		if( next >= numLines ) {  return r; }
-                if( strstr( lines[next], "origin" ) != NULL ) {
-                    sscanf( lines[next], "origin=%d,%d", &mZeroX, &mZeroY );
-                    next++;
+		if( next < numLines ) {
+                    if( strstr( lines[next], "origin" ) != NULL ) {
+                        sscanf( lines[next], "origin=%d,%d", &mZeroX, &mZeroY );
+                        next++;
+                        }
                     }
-
                 char floorPresent = false;
                 
-		if( next >= numLines ) {  return r; }
-                if( strstr( lines[next], "floorPresent" ) != NULL ) {
-                    floorPresent = true;
-                    next++;
-                    }
+		if( next < numLines ) {
+                    if( strstr( lines[next], "floorPresent" ) != NULL ) {
+                        floorPresent = true;
+                        next++;
+                        }
 
+		    }
                 clearScene();
                 
                 int numRead = 0;
@@ -3829,7 +3833,7 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
                     SceneCell *p = &( mPersonCells[y][x] );
                     SceneCell *f = &( mFloorCells[y][x] );
 
-                    next = scanCell( lines, next, c );
+                    next = scanCell( lines, next, c ); // TODO: Keep scanCell from segfaulting when the file was interrupted midstream.
                     next = scanCell( lines, next, p );
 
                     if( floorPresent ) {
