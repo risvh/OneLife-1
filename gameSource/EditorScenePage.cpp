@@ -363,12 +363,12 @@ EditorScenePage::EditorScenePage()
     mNextSceneNumber = 0;
     if( mScenesFolder.isDirectory() ) {
         mNextFile = mScenesFolder.getChildFile( "next.txt" );
-        if ( ! mNextFile->exists() ) {
+        if ( ! mNextFile->exists() ) { // It might change the scene order, and will change the count, when it's created.
             mNextFile->writeToFile( mNextSceneNumber );
             }
         
 //        mNextSceneNumber = mNextFile->readFileIntContents( 0 );
-        File **sceneFiles = mScenesFolder.getChildFiles( &mNextSceneNumber );
+        File **sceneFiles = mScenesFolder.getChildFiles( &mNextSceneNumber ); // Get the number of scenes we have.
 	for (int i = 0; i<mNextSceneNumber; i++) {
             delete sceneFiles[i];
 	    }
@@ -597,7 +597,7 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
         mSceneID += jump;
         while( ! tryLoadScene( mSceneID) &&
 		mSceneID < mNextSceneNumber
-               ) {
+               ) { // Try to load the scene while we're still in bounds.
             mSceneID++;
             }
         mReplaceButton.setVisible( true );
@@ -620,7 +620,7 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
             }
         mSceneID -= jump;
         while( ! tryLoadScene( mSceneID ) &&
-	       mSceneID > 0 ) {
+	       mSceneID > 0 ) { // Try to load the scene while we're still in bounds.
             mSceneID--;
             }
         mReplaceButton.setVisible( true );
@@ -2312,7 +2312,7 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
 			drawOutlineString( s, pos, alignCenter );
 			delete [] s;
 		} else {
-			if (mapChanged) {
+			if (mapChanged) { // Output the current scene filename to the screen.
 				File *f = getSceneFile( mSceneID );
 				char *n = f->getFileName();
 				char *s = autoSprintf( "Scene %s*", n );
@@ -3371,20 +3371,22 @@ void EditorScenePage::specialKeyDown( int inKeyCode ) {
 
 
 int EditorScenePage::getSceneFileID( char *fileName ) {
-    int numFiles = -1;
+    int numFiles = -1; // We want a number that getSceneFile will return this file for.
     File **SceneDirectoryList = mScenesFolder.getChildFilesSorted(&numFiles);
     int ret = -1;
 
     for( int i = 0; i < numFiles && ret == -1; i++) {
 	char *thisFileName = SceneDirectoryList[i]->getFileName();
 	if ( strcmp(thisFileName, fileName) == 0 ) {
-	    ret = i;
+	    ret = i; // Found it!
 	    }
 	    delete [] thisFileName;
         }
+
     for( int i = 0; i < numFiles; i++ ) {
         delete SceneDirectoryList[i];
         }
+
     delete [] SceneDirectoryList;
     return ret;
 }
@@ -3393,16 +3395,16 @@ File *EditorScenePage::getSceneFile( int inSceneID ) {
 // char *name = autoSprintf( "%d.txt", inSceneID );
     int numFiles = -1;
     File **SceneDirectoryList = mScenesFolder.getChildFilesSorted(&numFiles);
-    File *f = NULL;
+    File *f = NULL; // get a sorted list of all files
     if ( inSceneID >= numFiles || inSceneID < 0 ) {
-        do {
+        do { // If we're not in the bounds of that list, we want a NEW file.
             char *name = autoSprintf( "Editor_%d.txt", inSceneID );
             f = mScenesFolder.getChildFile( name );
             inSceneID++;
             delete [] name;
-            } while ( f->exists() );
+            } while ( f->exists() ); // For real though, a new file.
         }
-    else {
+    else { // We want the inSceneID'th file in the directory.
 
         char *name = SceneDirectoryList[inSceneID]->getFileName();
 
@@ -3578,10 +3580,10 @@ void EditorScenePage::writeSceneToFile( int inIDToUse ) {
 
     f->writeToFile( contents );
     if( inIDToUse == mNextSceneNumber ) {
-        mNextSceneNumber++;
+        mNextSceneNumber++; // Just in case we've deleted it. It might change the ID when it's created.
         mNextFile->writeToFile( mNextSceneNumber );
-        
-	char *fileName = f->getFileName();
+
+	char *fileName = f->getFileName(); // Make sure we have the same file we just created loaded.
 	mSceneID = getSceneFileID( fileName );
 	delete [] fileName;
     }
@@ -3778,7 +3780,7 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
             
             char **lines = split( fileText, "\n", &numLines );
             delete [] fileText;
-            clearScene();
+            clearScene(); // If we fail to load a scene, we're still on a new ID, so clear it.
 
 	    if( numLines > 1 ) { // One line files obviously aren't real.
 
@@ -3818,7 +3820,7 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
 
 		    }
                 clearScene();
-                
+
                 int numRead = 0;
                 
                 int x, y;
@@ -3883,12 +3885,12 @@ void EditorScenePage::checkNextPrevVisible() {
     mPrevSceneButton.setVisible( false );
 
 
-    if( mSceneID == -1 ) {
+    if( mSceneID == -1 ) { // We're on an unsaved scene. We can always look for the latest from here.
         mNextSceneButton.setVisible( false );
         
         mPrevSceneButton.setVisible( num >= 1 );
         }
-    else {
+    else { // Bounds are from 0 to one less than the number of files in the directory.
 	if( mSceneID < num - 1 ) {
 		mNextSceneButton.setVisible( true );
         }
