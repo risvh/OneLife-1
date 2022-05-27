@@ -3380,8 +3380,8 @@ int EditorScenePage::getSceneFileID( char *fileName ) {
 	if ( strcmp(thisFileName, fileName) == 0 ) {
 	    ret = i; // Found it!
 	    }
+	    delete [] thisFileName;
         }
-	delete [] thisFileName;
 
     for( int i = 0; i < numFiles; i++ ) {
         delete SceneDirectoryList[i];
