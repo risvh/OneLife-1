@@ -4656,7 +4656,7 @@ void HetuwMod::drawPlayersInRangePanel() {
 		if (mouseX >= recStartX && mouseX <= recEndX) {
 			if (mouseY >= recStartY && mouseY <= recEndY) {
 				doublePair descDrawPos = { (double)mouseX, (double)mouseY };
-				sprintf( text, "%s GEN:%i", fam->raceName.c_str(), fam->generation);
+				sprintf( text, "%s GEN:%i", fam->generation);
 				float rgba[4];
 				getLastNameColor(fam->name, rgba);
 				drawTextWithBckgr(descDrawPos, text, rgba);
