@@ -679,11 +679,20 @@ bool HetuwMod::strContainsDangerousAnimal(const char* str) {
 	if (strstr( str, "Shot Domestic Boar with Piglet") != NULL) return false;
 	if (strstr( str, "Shot Wild Boar with Piglet") != NULL) return false;
 	if (strstr( str, "Dead Grizzly Bear") != NULL) return false;
+	if (strstr( str, "Wolf Town Top") != NULL) return false;
+	if (strstr( str, "Wolf Town Pants") != NULL) return false;
+	if (strstr( str, "Wolf Flag Roll") != NULL) return false;
+	if (strstr( str, "Grizzly Bear Hat") != NULL) return false;
+	if (strstr( str, "Dead Brown Snake") != NULL) return false;
 
 	if (strstr( str, "Grizzly Bear") != NULL) return true;
 	if (strstr( str, "Wild Boar") != NULL) return true;
 	if (strstr( str, "Domestic Boar") != NULL) return true;
 	if (strstr( str, "Wolf") != NULL) return true;
+	if (strstr( str, "Brown Snake") != NULL) return true;
+	if (strstr( str, "Angry Bison") != NULL) return true;
+	if (strstr( str, "Angry Shot Bison") != NULL) return true;
+	if (strstr( str, "Swarm of Angry Bees") != NULL) return true;
 
 	return false;
 }
