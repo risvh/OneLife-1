@@ -2323,7 +2323,7 @@ void EditorScenePage::drawUnderComponents( doublePair inViewCenter,
 			} else {
 				File *f = getSceneFile( mSceneID );
 				char *n = f->getFileName();
-				char *s = autoSprintf( "Scene %s*", n );
+				char *s = autoSprintf( "Scene %s", n );
 				drawOutlineString( s, pos, alignCenter );
 				delete [] n;
 				delete f;
