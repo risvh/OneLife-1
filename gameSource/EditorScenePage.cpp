@@ -3398,7 +3398,7 @@ File *EditorScenePage::getSceneFile( int inSceneID ) {
     File *f = NULL; // get a sorted list of all files
     if ( inSceneID >= numFiles || inSceneID < 0 ) {
         do { // If we're not in the bounds of that list, we want a NEW file.
-            char *name = autoSprintf( "Editor_%d.txt", inSceneID );
+            char *name = autoSprintf( "Editor_%02d.txt", inSceneID );
 	    if( f != NULL ) {
 		delete f;
 		f = NULL;
