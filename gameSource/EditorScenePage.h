@@ -256,6 +256,8 @@ class EditorScenePage : public GamePage, public ActionListener {
 
         void restartAllMoves();
         
+        std::vector<File*> getSceneFiles();
+        
         int getSceneFileID( char *fileName );
 
         File *getSceneFile( int inSceneID );

@@ -595,11 +595,14 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
             }
 
         mSceneID += jump;
-        while( ! tryLoadScene( mSceneID) &&
-		mSceneID < mNextSceneNumber
-               ) { // Try to load the scene while we're still in bounds.
+        
+        // Try to load the scene while we're still in bounds.
+        while( ! tryLoadScene( mSceneID ) && mSceneID < mNextSceneNumber ) { 
             mSceneID++;
             }
+            
+        if( mSceneID >= mNextSceneNumber ) mSceneID = mNextSceneNumber - 1;
+            
         mReplaceButton.setVisible( true );
         mDeleteButton.setVisible( true );
         checkNextPrevVisible();
@@ -619,10 +622,14 @@ void EditorScenePage::actionPerformed( GUIComponent *inTarget ) {
             mSceneID = mNextSceneNumber;
             }
         mSceneID -= jump;
-        while( ! tryLoadScene( mSceneID ) &&
-	       mSceneID > 0 ) { // Try to load the scene while we're still in bounds.
+        
+        // Try to load the scene while we're still in bounds.
+        while( ! tryLoadScene( mSceneID ) && mSceneID > 0 ) {
             mSceneID--;
             }
+            
+        if( mSceneID < 0 ) mSceneID = 0;
+            
         mReplaceButton.setVisible( true );
         mDeleteButton.setVisible( true );
         checkNextPrevVisible();
@@ -3370,58 +3377,71 @@ void EditorScenePage::specialKeyDown( int inKeyCode ) {
     }
 
 
+std::vector<File*> EditorScenePage::getSceneFiles() {
+    
+    std::vector<File*> results;
+    
+    int numFiles = 0;
+    File **SceneDirectoryList = mScenesFolder.getChildFiles( &numFiles );  
+
+    for( int i=0; i<numFiles; i++ ) {
+        if( strcmp( SceneDirectoryList[i]->getFileName(), "next.txt" ) != 0 ) {
+            results.push_back( SceneDirectoryList[i] );
+        } else {
+            delete SceneDirectoryList[i];
+        }
+    }
+    delete [] SceneDirectoryList;
+    
+    return results;
+    
+}
+
 int EditorScenePage::getSceneFileID( char *fileName ) {
-    int numFiles = -1; // We want a number that getSceneFile will return this file for.
-    File **SceneDirectoryList = mScenesFolder.getChildFilesSorted(&numFiles);
+    
+    // We want a number that getSceneFile will return this file for.
+    std::vector<File*>SceneDirectoryList = getSceneFiles();
+    int numFiles = SceneDirectoryList.size();
     int ret = -1;
 
     for( int i = 0; i < numFiles && ret == -1; i++) {
-	char *thisFileName = SceneDirectoryList[i]->getFileName();
-	if ( strcmp(thisFileName, fileName) == 0 ) {
-	    ret = i; // Found it!
-	    }
-	    delete [] thisFileName;
+        char *thisFileName = SceneDirectoryList[i]->getFileName();
+        if ( strcmp(thisFileName, fileName) == 0 ) {
+            ret = i; // Found it!
         }
+        delete [] thisFileName;
+    }
 
     for( int i = 0; i < numFiles; i++ ) {
         delete SceneDirectoryList[i];
-        }
+    }
 
-    delete [] SceneDirectoryList;
     return ret;
+    
 }
 
 File *EditorScenePage::getSceneFile( int inSceneID ) {
-// char *name = autoSprintf( "%d.txt", inSceneID );
-    int numFiles = -1;
-    File **SceneDirectoryList = mScenesFolder.getChildFilesSorted(&numFiles);
+    
+    // char *name = autoSprintf( "%d.txt", inSceneID );
+    
+    std::vector<File*>SceneDirectoryList = getSceneFiles();
+    int numFiles = SceneDirectoryList.size();
     File *f = NULL; // get a sorted list of all files
-    if ( inSceneID >= numFiles || inSceneID < 0 ) {
-        do { // If we're not in the bounds of that list, we want a NEW file.
-            char *name = autoSprintf( "Editor_%02d.txt", inSceneID );
-	    if( f != NULL ) {
-		delete f;
-		f = NULL;
-	        }
+    
+    // inSceneID bounds should be checked elsewhere
+    if( inSceneID < 0 || inSceneID >= numFiles ) {
+        return NULL;
+    }
+    
+    char *name = SceneDirectoryList[inSceneID]->getFileName();
 
-            f = mScenesFolder.getChildFile( name );
-            inSceneID++;
-            delete [] name;
-            } while ( f->exists() ); // For real though, a new file.
-        }
-    else { // We want the inSceneID'th file in the directory.
+    f = mScenesFolder.getChildFile( name );
+    delete [] name;
 
-        char *name = SceneDirectoryList[inSceneID]->getFileName();
-
-        f = mScenesFolder.getChildFile( name );
-        delete [] name;
-        }
-
-    for ( int i=0; i<numFiles; i++) {
+    for( int i=0; i<numFiles; i++ ) {
         delete SceneDirectoryList[i];
-        }
+    }
 
-    delete [] SceneDirectoryList;
     return f;
 }
 
@@ -3765,14 +3785,14 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
     File *f = getSceneFile( inSceneID );
     
     char r = false;
-    if( f == NULL) {
-	clearScene();
+    if( f == NULL ) {
+        clearScene();
         return r;
     }
     
     if( f->exists() && ! f->isDirectory() ) {
-        printf( "Trying to load scene %d\n", inSceneID );
         
+        printf( "Trying to load scene %d\n", inSceneID );
         
         char *fileText = f->readFileContents();
         
@@ -3780,7 +3800,7 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
 			
 			while ( queueSize > 0 ) {
 				queuesPopBack();
-				}
+			}
 			queueIndex = 0;
             
             int numLines = 0;
@@ -3789,7 +3809,7 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
             delete [] fileText;
             clearScene(); // If we fail to load a scene, we're still on a new ID, so clear it.
 
-	    if( numLines > 1 ) { // One line files obviously aren't real.
+            if( numLines > 1 ) { // One line files obviously aren't real.
 
                 int next = 0;
 
@@ -3797,45 +3817,42 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
                 int w = mSceneW;
                 int h = mSceneH;
 
-		if( next < numLines ) { // if we ever look at lines[next] after running out of lines
+                if( next < numLines ) { // if we ever look at lines[next] after running out of lines
                     sscanf( lines[next], "w=%d", &w );    // we will have a segfault.
                     next++;
-                    }
+                }
 
-		if( next < numLines ) {
+                if( next < numLines ) {
                     sscanf( lines[next], "h=%d", &h );
                     next++;
-                    }
+                }
 
                 if( w != mSceneW || h != mSceneH ) {
                     resizeGrid( h, w );
-                    }
+                }
 
-		if( next < numLines ) {
+                if( next < numLines ) {
                     if( strstr( lines[next], "origin" ) != NULL ) {
                         sscanf( lines[next], "origin=%d,%d", &mZeroX, &mZeroY );
                         next++;
-                        }
                     }
-                char floorPresent = false;
+                }
                 
-		if( next < numLines ) {
+                char floorPresent = false;
+                if( next < numLines ) {
                     if( strstr( lines[next], "floorPresent" ) != NULL ) {
                         floorPresent = true;
                         next++;
-                        }
-
-		    }
+                    }
+                }
                 clearScene();
 
                 int numRead = 0;
-                
                 int x, y;
-
                 if (next < numLines) {
                     numRead = sscanf( lines[next], "x=%d,y=%d", &x, &y );
                     next++;
-                    }
+                }
 
                 while( numRead == 2 ) {
                     SceneCell *c = &( mCells[y][x] );
@@ -3854,24 +3871,14 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
                     if( next < numLines ) {
                         numRead = sscanf( lines[next], "x=%d,y=%d", &x, &y );
                         next++;
-                        }
                     }
-	        } else { 
-                // Do not load one-line files like next.txt
-                
-                for( int i=0; i<numLines; i++ ) {
-                    delete [] lines[i];
-                    }
-                delete [] lines;
-                
-                delete f;
-                
-                return false;
                 }
+                
+	        }
             
             for( int i=0; i<numLines; i++ ) {
                 delete [] lines[i];
-                }
+            }
             delete [] lines;
 
             r = true;
@@ -3882,47 +3889,45 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
 			
 			spriteCount = round( std::max(mSceneH, mSceneW) / 200 * 25 );
 				
-            }
         }
-    
+    }    
     
     delete f;
     
     return r;
-    }
+}
 
         
 
 
 void EditorScenePage::checkNextPrevVisible() {
-    int num = 0;
-    File **cf = mScenesFolder.getChildFiles( &num );
+    
+    std::vector<File*>cf = getSceneFiles();
+    int num = cf.size();
     mNextSceneNumber = num; // Keep mNextSceneNumber out of bounds, so new files will be new.
         
     mNextSceneButton.setVisible( false );
     mPrevSceneButton.setVisible( false );
 
-
     if( mSceneID == -1 ) { // We're on an unsaved scene. We can always look for the latest from here.
         mNextSceneButton.setVisible( false );
         
         mPrevSceneButton.setVisible( num >= 1 );
-        }
-    else { // Bounds are from 0 to one less than the number of files in the directory.
-	if( mSceneID < num - 1 ) {
-		mNextSceneButton.setVisible( true );
-        }
-	if( mSceneID > 0 && num > 0 ) {
-		mPrevSceneButton.setVisible( true );
-	}
     }
-    
+    else { // Bounds are from 0 to one less than the number of files in the directory.
+        if( mSceneID < num - 1 ) {
+            mNextSceneButton.setVisible( true );
+        }
+        if( mSceneID > 0 && num > 0 ) {
+            mPrevSceneButton.setVisible( true );
+        }
+    }
         
     for( int i=0; i<num; i++ ) {
         delete cf[i];
-        }
-    delete [] cf;
     }
+    
+}
 
 
 
