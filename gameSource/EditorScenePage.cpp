@@ -3429,14 +3429,32 @@ File *EditorScenePage::getSceneFile( int inSceneID ) {
     File *f = NULL; // get a sorted list of all files
     
     // inSceneID bounds should be checked elsewhere
-    if( inSceneID < 0 || inSceneID >= numFiles ) {
+    if( inSceneID < 0 ) {
         return NULL;
     }
     
-    char *name = SceneDirectoryList[inSceneID]->getFileName();
+    if ( inSceneID >= numFiles ) {
+        
+        do { // If we're not in the bounds of that list, we want a NEW file.
+            char *name = autoSprintf( "Editor_%02d.txt", inSceneID );
+            if( f != NULL ) {
+                delete f;
+                f = NULL;
+	        }
 
-    f = mScenesFolder.getChildFile( name );
-    delete [] name;
+            f = mScenesFolder.getChildFile( name );
+            inSceneID++;
+            delete [] name;
+        } while ( f->exists() ); // For real though, a new file.
+        
+    } else {
+    
+        char *name = SceneDirectoryList[inSceneID]->getFileName();
+
+        f = mScenesFolder.getChildFile( name );
+        delete [] name;
+        
+    }
 
     for( int i=0; i<numFiles; i++ ) {
         delete SceneDirectoryList[i];
