@@ -3572,6 +3572,8 @@ void EditorScenePage::writeSceneToFile( int inIDToUse ) {
                 }
             }
         }
+        
+    lines.push_back( "" );
     
         
     
