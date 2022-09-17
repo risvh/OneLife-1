@@ -3854,7 +3854,18 @@ char EditorScenePage::tryLoadScene( int inSceneID ) {
                         next++;
                         }
                     }
-	        }
+	        } else { 
+                // Do not load one-line files like next.txt
+                
+                for( int i=0; i<numLines; i++ ) {
+                    delete [] lines[i];
+                    }
+                delete [] lines;
+                
+                delete f;
+                
+                return false;
+                }
             
             for( int i=0; i<numLines; i++ ) {
                 delete [] lines[i];
