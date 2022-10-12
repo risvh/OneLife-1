@@ -390,9 +390,10 @@ EditorScenePage::EditorScenePage()
     addKeyClassDescription( &mKeyLegend, "None/Shft + V", "Paste cell/area" );
 	addKeyClassDescription( &mKeyLegend, "None/Shft + Q", "Clear cell/area" );
     
-    addKeyClassDescription( &mKeyLegend, "Space", "Focus search" );
-    addKeyClassDescription( &mKeyLegend, "Enter", "Unfocus search" );
-    addKeyClassDescription( &mKeyLegend, "None/Shft + Tab", "Next/Prev search page" );
+    addKeyClassDescription( &mKeyLegend, "Tab", "Focus/Unfocus search" );
+    addKeyClassDescription( &mKeyLegend, "Ctrl + W/S", "Change selection in search page" );
+    addKeyClassDescription( &mKeyLegend, "Ctrl + A/D", "Next/Prev search page" );
+    addKeyClassDescription( &mKeyLegend, "Ctrl + Tab", "Previous selected objects" );
 
     addKeyClassDescription( &mKeyLegendG, "Shft + L - Click", "Flood fill" );
     addKeyClassDescription( &mKeyLegendC, "Shft + L - Click", "Add to Container" );
@@ -2432,6 +2433,10 @@ void EditorScenePage::step() {
 
 // bool shiftDown = false;
 // bool ctrlDown = false;
+extern char upKey;
+extern char leftKey;
+extern char downKey;
+extern char rightKey;
 
 void EditorScenePage::keyDown( unsigned char inASCII ) {
 	
@@ -2445,14 +2450,36 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
         // return to cursor control
         TextField::unfocusAll();
         }
-        
-    if( inASCII == 9 ) {
-        // tab
-        if ( mShowUI ) {
-            if( isShiftKeyDown() ) {
-                mObjectPicker.prevPage();
+    
+    bool commandKey = isCommandKeyDown();
+    if ( mShowUI ) {
+        if( !commandKey && inASCII == 9 ) { // TAB
+            if( TextField::isAnyFocused() ) {
+                TextField::unfocusAll();
             } else {
+                mObjectPicker.clearSearchField();
+                mObjectPicker.focusSearchField();
+            }
+            return;
+        } else if( commandKey && inASCII == 9 ) { // ctrl + TAB
+            mObjectPicker.setSearchField( "." );
+            TextField::unfocusAll();
+            return;
+        } else if( !TextField::isAnyFocused() && commandKey ) {
+            if( inASCII + 64 == toupper(upKey) ) {
+                mObjectPicker.selectUp();
+                char oWasRightClick = false;
+                pickedOID = mObjectPicker.getSelectedObject( &oWasRightClick );
+                pickedGID = -1;
+            } else if( inASCII + 64 == toupper(downKey) ) {
+                mObjectPicker.selectDown();
+                char oWasRightClick = false;
+                pickedOID = mObjectPicker.getSelectedObject( &oWasRightClick );
+                pickedGID = -1;
+            }  else if( inASCII + 64 == toupper(rightKey) ) {
                 mObjectPicker.nextPage();
+            }  else if( inASCII + 64 == toupper(leftKey) ) {
+                mObjectPicker.prevPage();
             }
         }
     }
@@ -2461,22 +2488,6 @@ void EditorScenePage::keyDown( unsigned char inASCII ) {
         mShowUI = true;
         return;
         }
-		
-    if( inASCII == 32 ) {
-        // spacebar
-        if ( mShowUI ) {
-            // mGroundPicker.unselectObject();
-            // mObjectPicker.unselectObject();
-            
-            if( !mObjectPicker.mSearchField.isFocused() ) {
-                mObjectPicker.mSearchField.focus();
-                mObjectPicker.mSearchField.setText("");
-            } else {
-                TextField::unfocusAll();
-            }
-        }
-        
-    }
     
     if ( tolower(inASCII) == 'e' ) {
         mShowUI = ! mShowUI;
@@ -3103,6 +3114,9 @@ void EditorScenePage::pointerDown( float inX, float inY ) {
                         mark( x, y, 1 );
 					}
 				}
+                
+                mObjectPicker.usePickable( oId );
+                
 			} else if( gId >= 0 ) {
 				
 				if( gId >= 0 ) {
