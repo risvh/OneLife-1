@@ -89,15 +89,18 @@ EditorObjectPage::EditorObjectPage()
                              false,
                              "Contain Size", "0123456789.", NULL ),
           mSlotSizeField( smallFont, 
-                          -280,  -230, 4,
+                          -625,  -200, 4,
                           false,
                           "Slot Size", "0123456789.", NULL ),
           mSlotTimeStretchField( smallFont, 
-                                 -155,  -110, 4,
+                                 -625,  -380, 4,
                                  false,
                                  "Tm Strch", "0123456789.", NULL ),
-          mSlotsLockedCheckbox( -260, -200, 2 ),
-          mSlotsNoSwapCheckbox( -160, -200, 2 ),
+          mSlotsBoxCheckbox( -625, -230, 2 ),
+          mSlotsTableCheckbox( -625, -250, 2 ),
+          mSlotsGroundCheckbox( -625, -270, 2 ),
+          mSlotsLockedCheckbox( -625, -330, 2 ),
+          mSlotsNoSwapCheckbox( -625, -350, 2 ),
           mNoFlipCheckbox( 460, -260, 2 ),
           mSideAccessCheckbox( 460, -240, 2 ),
           mDeadlyDistanceField( smallFont, 
@@ -127,8 +130,8 @@ EditorObjectPage::EditorObjectPage()
           mImportEditorButton( mainFont, -210, 260, "Sprites" ),
           mTransEditorButton( mainFont, 210, 260, "Trans" ),
           mAnimEditorButton( mainFont, 330, 260, "Anim" ),
-          mMoreSlotsButton( smallFont, -280, -110, "More" ),
-          mLessSlotsButton( smallFont, -280, -166, "Less" ),
+          mMoreSlotsButton( smallFont, -625, -110, "More" ),
+          mLessSlotsButton( smallFont, -625, -166, "Less" ),
           mAgingLayerCheckbox( 290, -22, 2 ),
           mHeadLayerCheckbox( 290, 104, 2 ),
           mBodyLayerCheckbox( 290, 84, 2 ),
@@ -188,8 +191,8 @@ EditorObjectPage::EditorObjectPage()
           mSimUseSlider( smallFont, 220, 64, 2, 50, 20, 0, 10, "" ),
           mDemoClothesButton( smallFont, 300, 200, "Pos" ),
           mEndClothesDemoButton( smallFont, 300, 160, "XPos" ),
-          mDemoSlotsButton( smallFont, -200, -166, "Demo Slots" ),
-          mClearSlotsDemoButton( smallFont, -200, -212, "End Demo" ),
+          mDemoSlotsButton( smallFont, -625, -70, "Demo Slots" ),
+          mClearSlotsDemoButton( smallFont, -625, -70, "End Demo" ),
           mSetHeldPosButton( smallFont, 250, -32, "Held Pos" ),
           mEndSetHeldPosButton( smallFont, 240, -76, "End Held" ),
           mNextHeldDemoButton( smallFont, 312, -76, ">" ),
@@ -213,7 +216,7 @@ EditorObjectPage::EditorObjectPage()
           mValueSlider( smallFont, -90, -189, 2,
                         75, 20,
                         0, 1, "V" ),
-          mSlotVertCheckbox( -150, -138, 2 ),
+          mSlotVertCheckbox( -625, -310, 2 ),
           mCreationSoundWidget( smallFont, -300, -310 ),
           mUsingSoundWidget( smallFont, -50, -310 ),
           mEatingSoundWidget( smallFont, +200, -310 ),
@@ -256,6 +259,9 @@ EditorObjectPage::EditorObjectPage()
     addComponent( &mContainSizeField );
     addComponent( &mSlotSizeField );
     addComponent( &mSlotTimeStretchField );
+    addComponent( &mSlotsBoxCheckbox );
+    addComponent( &mSlotsTableCheckbox );
+    addComponent( &mSlotsGroundCheckbox );
     addComponent( &mSlotsLockedCheckbox );
     addComponent( &mSlotsNoSwapCheckbox );
     
@@ -279,6 +285,9 @@ EditorObjectPage::EditorObjectPage()
     mContainSizeField.setVisible( false );
     mSlotSizeField.setVisible( false );
     mSlotTimeStretchField.setVisible( false );
+    mSlotsBoxCheckbox.setVisible( false );
+    mSlotsTableCheckbox.setVisible( false );
+    mSlotsGroundCheckbox.setVisible( false );
     mSlotsLockedCheckbox.setVisible( false );
     mSlotsNoSwapCheckbox.setVisible( false );
     
@@ -337,6 +346,10 @@ EditorObjectPage::EditorObjectPage()
     
     mDemoVertRotButton.addActionListener( this );
     mResetVertRotButton.addActionListener( this );
+    
+    mSlotsBoxCheckbox.addActionListener( this );
+    mSlotsTableCheckbox.addActionListener( this );
+    mSlotsGroundCheckbox.addActionListener( this );
     
     mDemoVertRotButton.setVisible( false );
     mResetVertRotButton.setVisible( false );
@@ -512,6 +525,7 @@ EditorObjectPage::EditorObjectPage()
     
     mCurrentObject.numSlots = 0;
     mCurrentObject.slotPos = new doublePair[ 0 ];
+    mCurrentObject.slotStyle = 0;
     mCurrentObject.slotVert = new char[ 0 ];
     mCurrentObject.slotParent = new int[ 0 ];
     
@@ -1499,6 +1513,7 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
                    mCurrentObject.numSlots,
                    mSlotSizeField.getFloat(),
                    mCurrentObject.slotPos,
+                   mCurrentObject.slotStyle,
                    mCurrentObject.slotVert,
                    mCurrentObject.slotParent,
                    mSlotTimeStretchField.getFloat(),
@@ -1651,6 +1666,7 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
                    mCurrentObject.numSlots,
                    mSlotSizeField.getFloat(), 
                    mCurrentObject.slotPos,
+                   mCurrentObject.slotStyle,
                    mCurrentObject.slotVert,
                    mCurrentObject.slotParent,
                    mSlotTimeStretchField.getFloat(),
@@ -1739,12 +1755,18 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
         mContainSizeField.setFloat( 1, 4, true );
         mSlotSizeField.setFloat( 1, 4, true );
         mSlotTimeStretchField.setText( "1.0" );
+        mSlotsBoxCheckbox.setToggled( false );
+        mSlotsTableCheckbox.setToggled( false );
+        mSlotsGroundCheckbox.setToggled( false );
         mSlotsLockedCheckbox.setToggled( false );
         mSlotsNoSwapCheckbox.setToggled( false );
 
         mContainSizeField.setVisible( false );
         mSlotSizeField.setVisible( false );
         mSlotTimeStretchField.setVisible( false );
+        mSlotsBoxCheckbox.setVisible( false );
+        mSlotsTableCheckbox.setVisible( false );
+        mSlotsGroundCheckbox.setVisible( false );
         mSlotsLockedCheckbox.setVisible( false );
         mSlotsNoSwapCheckbox.setVisible( false );
         
@@ -2024,6 +2046,9 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
         
         mSlotSizeField.setVisible( true );
         mSlotTimeStretchField.setVisible( true );
+        mSlotsBoxCheckbox.setVisible( true );
+        mSlotsTableCheckbox.setVisible( true );
+        mSlotsGroundCheckbox.setVisible( true );
         mSlotsLockedCheckbox.setVisible( true );
         mSlotsNoSwapCheckbox.setVisible( true );
         
@@ -2053,7 +2078,12 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
                 
                 mSlotTimeStretchField.setText( "1.0" );
                 mSlotTimeStretchField.setVisible( false );
-                
+                mSlotsBoxCheckbox.setToggled( false );
+                mSlotsBoxCheckbox.setVisible( false );
+                mSlotsTableCheckbox.setToggled( false );
+                mSlotsTableCheckbox.setVisible( false );
+                mSlotsGroundCheckbox.setToggled( false );
+                mSlotsGroundCheckbox.setVisible( false );
                 mSlotsLockedCheckbox.setToggled( false );
                 mSlotsLockedCheckbox.setVisible( false );
                 mSlotsNoSwapCheckbox.setToggled( false );
@@ -2065,6 +2095,36 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
                 
                 mInvisibleWhenContainedCheckbox.setVisible( false );
                 }
+            }
+        }
+    else if( inTarget == &mSlotsBoxCheckbox ) {    
+        if( mSlotsBoxCheckbox.getToggled() ) {
+            mSlotsTableCheckbox.setToggled( false );
+            mSlotsGroundCheckbox.setToggled( false );
+            mCurrentObject.slotStyle = 0;
+            }
+        else {
+            mCurrentObject.slotStyle = 0;
+            }
+        }
+    else if( inTarget == &mSlotsTableCheckbox ) {    
+        if( mSlotsTableCheckbox.getToggled() ) {
+            mSlotsBoxCheckbox.setToggled( false );
+            mSlotsGroundCheckbox.setToggled( false );
+            mCurrentObject.slotStyle = 1;
+            }
+        else {
+            mCurrentObject.slotStyle = 0;
+            }
+        }
+    else if( inTarget == &mSlotsGroundCheckbox ) {    
+        if( mSlotsGroundCheckbox.getToggled() ) {
+            mSlotsBoxCheckbox.setToggled( false );
+            mSlotsTableCheckbox.setToggled( false );
+            mCurrentObject.slotStyle = 2;
+            }
+        else {
+            mCurrentObject.slotStyle = 0;
             }
         }
     else if( inTarget == &mDemoSlotsButton ) {
@@ -2822,6 +2882,9 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
             mSlotSizeField.setFloat( pickedRecord->slotSize, 4, true );
             mSlotTimeStretchField.setFloat( pickedRecord->slotTimeStretch,
                                             -1, true );
+            mSlotsBoxCheckbox.setToggled( pickedRecord->slotStyle == 0 );
+            mSlotsTableCheckbox.setToggled( pickedRecord->slotStyle == 1 );
+            mSlotsGroundCheckbox.setToggled( pickedRecord->slotStyle == 2 );
             mSlotsLockedCheckbox.setToggled( pickedRecord->slotsLocked );
             mSlotsNoSwapCheckbox.setToggled( pickedRecord->slotsNoSwap );
             
@@ -3215,6 +3278,12 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
                 mSlotTimeStretchField.setText( "1.0" );
                 mSlotTimeStretchField.setVisible( false );
                 
+                mSlotsBoxCheckbox.setToggled( false );
+                mSlotsBoxCheckbox.setVisible( false );
+                mSlotsTableCheckbox.setToggled( false );
+                mSlotsTableCheckbox.setVisible( false );
+                mSlotsGroundCheckbox.setToggled( false );
+                mSlotsGroundCheckbox.setVisible( false );
                 mSlotsLockedCheckbox.setToggled( false );
                 mSlotsLockedCheckbox.setVisible( false );
                 mSlotsNoSwapCheckbox.setToggled( false );
@@ -3223,6 +3292,9 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
             else {
                 mSlotSizeField.setVisible( true );
                 mSlotTimeStretchField.setVisible( true );
+                mSlotsBoxCheckbox.setVisible( true );
+                mSlotsTableCheckbox.setVisible( true );
+                mSlotsGroundCheckbox.setVisible( true );
                 mSlotsLockedCheckbox.setVisible( true );
                 mSlotsNoSwapCheckbox.setVisible( true );
                 }
@@ -3285,6 +3357,12 @@ void EditorObjectPage::actionPerformed( GUIComponent *inTarget ) {
             mSlotTimeStretchField.setText( "1.0" );
             mSlotTimeStretchField.setVisible( false );
             
+            mSlotsBoxCheckbox.setToggled( false );
+            mSlotsBoxCheckbox.setVisible( false );
+            mSlotsTableCheckbox.setToggled( false );
+            mSlotsTableCheckbox.setVisible( false );
+            mSlotsGroundCheckbox.setToggled( false );
+            mSlotsGroundCheckbox.setVisible( false );
             mSlotsLockedCheckbox.setToggled( false );
             mSlotsLockedCheckbox.setVisible( false );
             mSlotsNoSwapCheckbox.setToggled( false );
@@ -3935,11 +4013,14 @@ void EditorObjectPage::draw( doublePair inViewCenter,
 
                 doublePair centerOffset;
 
-                if( allBehind ) {
+                if( mCurrentObject.slotStyle == 0 ) {
                     centerOffset = getObjectBottomCenterOffset( demoObject );
                     }
-                else {
+                else if( mCurrentObject.slotStyle == 1 ) {
                     centerOffset = getObjectCenterOffset( demoObject );
+                    }
+                else if( mCurrentObject.slotStyle == 2 ) {
+                    centerOffset = {0, 0};
                     }
 
 
@@ -4178,6 +4259,15 @@ void EditorObjectPage::draw( doublePair inViewCenter,
         }
     
 
+    if( mSlotsBoxCheckbox.isVisible() ) {
+        pos = mSlotsBoxCheckbox.getPosition();
+        pos.x -= checkboxSep;
+        smallFont->drawString( "Box-like", pos, alignRight );
+        pos.y -= 20;
+        smallFont->drawString( "Table-like", pos, alignRight );
+        pos.y -= 20;
+        smallFont->drawString( "Ground-like", pos, alignRight );
+        }
     if( mSlotsLockedCheckbox.isVisible() ) {
         pos = mSlotsLockedCheckbox.getPosition();
         pos.x -= checkboxSep;
