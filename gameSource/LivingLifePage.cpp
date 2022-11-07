@@ -3303,10 +3303,16 @@ LivingLifePage::LivingLifePage()
         }
 
 
-    mTutorialSound = loadSoundSprite( "otherSounds", "tutorialChime.aiff" );
+    mChimeSound = loadSoundSprite( "otherSounds", "chime.aiff" );
 
-    if( mTutorialSound != NULL ) {
-        toggleVariance( mTutorialSound, true );
+    if( mChimeSound != NULL ) {
+        toggleVariance( mChimeSound, true );
+        }
+        
+    mNotepaperSound = loadSoundSprite( "otherSounds", "notepaper.aiff" );
+
+    if( mNotepaperSound != NULL ) {
+        toggleVariance( mNotepaperSound, true );
         }
 
     mCurseSound = loadSoundSprite( "otherSounds", "curseChime.aiff" );
@@ -3784,8 +3790,12 @@ LivingLifePage::~LivingLifePage() {
         freeSoundSprite( mHungerSound );
         }
 
-    if( mTutorialSound != NULL ) {    
-        freeSoundSprite( mTutorialSound );
+    if( mChimeSound != NULL ) {    
+        freeSoundSprite( mChimeSound );
+        }
+        
+    if( mNotepaperSound != NULL ) {    
+        freeSoundSprite( mNotepaperSound );
         }
 
     if( mCurseSound != NULL ) {    
@@ -14450,9 +14460,9 @@ void LivingLifePage::step() {
                     stereoPos = 0.75;
                     }
                 
-                if( mTutorialSound != NULL ) {
-                        playSoundSprite( mTutorialSound, 
-                                         0.18 * getSoundEffectsLoudness(), 
+                if( mNotepaperSound != NULL ) {
+                        playSoundSprite( mNotepaperSound, 
+                                         0.03 * getSoundEffectsLoudness(), 
                                          stereoPos );
                     }
                 }
