@@ -6626,6 +6626,21 @@ char LivingLifePage::isCoveredByFloor( int inTileIndex ) {
         }
     return false;
     }
+    
+    
+char LivingLifePage::isCoveredByFloor( int inTileIndex ) {
+    int i = inTileIndex;
+
+    int fID = mMapFloors[ i ];
+
+    if( fID > 0 && 
+        ! getObject( fID )->noCover ) {
+        return true;
+        }
+    return false;
+    }
+
+
 
 
 
