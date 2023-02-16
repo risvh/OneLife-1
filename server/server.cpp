@@ -3425,6 +3425,23 @@ double computeFoodDecrementTimeSeconds( LiveObject *inPlayer ) {
     
     // all player temp effects push us up above min
     value += minFoodDecrementSeconds;
+    
+    // The more you stack the yum bonus, the faster it drains
+    // A nerf against extreme bonus stacking that lasts for a whole life
+    
+    // bonus above this will start to fall off
+    float xStart = 120.0;
+    if( inPlayer->yummyBonusStore > xStart ) {
+        // controls the rate of fall off 
+        float xScaling = 3.0;
+        float x = (inPlayer->yummyBonusStore - xStart) / xStart * xScaling;
+        // y is a fraction
+        float y = 1/(x+1);
+        // multiplied to the original value
+        value = value * y;
+        // still obey the min
+        value = std::max(value, minFoodDecrementSeconds);
+        }
 
     value += inPlayer->personalFoodDecrementSecondsBonus;
 
@@ -7204,6 +7221,9 @@ static void updateYum( LiveObject *inPlayer, int inFoodEatenID,
         // it's confusing to see a yum multiplier on the screen and then
         // not receive that number of bonus food points.
         inPlayer->yummyBonusStore += currentBonus;
+		
+        // and only get bonus part of foodValue if yummy (or is craved)
+        inPlayer->yummyBonusStore += o->bonusValue;
         }
     
     }
@@ -22503,7 +22523,7 @@ int main() {
                                 
 
                                 if( targetObj->permanent &&
-                                    targetObj->foodValue > 0 ) {
+                                    (targetObj->foodValue > 0 || targetObj->bonusValue > 0) ) {
                                     
                                     // just touching this object
                                     // causes us to eat from it
@@ -23489,7 +23509,7 @@ int main() {
                                     // food when not starving.
                                     setRefuseFoodEmote( targetPlayer );
                                     }
-                                else if( obj->foodValue > 0 &&
+                                else if( (obj->foodValue > 0 || obj->bonusValue > 0) && 
                                          targetPlayer->foodStore < cap &&
                                          ! couldHaveGoneIn ) {
                                     
@@ -23539,6 +23559,7 @@ int main() {
                                             }
                                         targetPlayer->yummyBonusStore += over;
                                         }
+										
                                     targetPlayer->foodDecrementETASeconds =
                                         Time::getCurrentTime() +
                                         computeFoodDecrementTimeSeconds( 
