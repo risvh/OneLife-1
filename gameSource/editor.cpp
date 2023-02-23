@@ -124,7 +124,10 @@ doublePair lastScreenViewCenter = {0, 0 };
 
 
 // world with of one view
-double viewWidth = 1024;
+double viewWidth = 1280;
+double viewHeight = 720;
+extern int screenWidth;
+extern int screenHeight;
 
 // fraction of viewWidth visible vertically (aspect ratio)
 double viewHeightFraction;
@@ -323,11 +326,20 @@ void initDrawString( int inWidth, int inHeight ) {
     mainFont->setMinimumPositionPrecision( 1 );
 
     setViewCenterPosition( lastScreenViewCenter.x, lastScreenViewCenter.y );
+	
+	viewWidth = screenWidth;
+	viewHeight = screenHeight;
 
     viewHeightFraction = inHeight / (double)inWidth;
+    
+    if( viewHeightFraction < 9.0 / 16.0 ) {
+        // weird, wider than 16:9 aspect ratio
+        
+        viewWidth = viewHeight / viewHeightFraction;
+        }
 
     // rect window
-    viewWidth = inWidth;
+    // viewWidth = inWidth;
     
     
     setViewSize( viewWidth );
@@ -402,12 +414,21 @@ void initFrameDrawer( int inWidth, int inHeight, int inTargetFrameRate,
 
 
     setViewCenterPosition( lastScreenViewCenter.x, lastScreenViewCenter.y );
+	
+	viewWidth = screenWidth;
+	viewHeight = screenHeight;
 
     viewHeightFraction = inHeight / (double)inWidth;
+    
+    if( viewHeightFraction < 9.0 / 16.0 ) {
+        // weird, wider than 16:9 aspect ratio
+        
+        viewWidth = viewHeight / viewHeightFraction;
+        }
 
     
     // square window for this game
-    viewWidth = inWidth;
+    // viewWidth = inWidth;
     
     
     setViewSize( viewWidth );

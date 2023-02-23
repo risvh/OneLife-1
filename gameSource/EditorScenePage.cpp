@@ -40,6 +40,7 @@ bool mapChanged = false;
 
 extern double viewHeightFraction;
 extern double viewWidth;
+extern double viewHeight;
 
 extern Font *mainFont;
 extern Font *smallFont;
@@ -100,7 +101,7 @@ EditorScenePage::EditorScenePage()
 		  
 		  // mUndoButton( smallFont, -877, 340, "Undo" ),
 		  // mRedoButton( smallFont, -817, 340, "Redo" ),
-		  mUndoButton( smallFont, -(int)( viewWidth/2 * 0.75 ) - 55, (int)( viewWidth*viewHeightFraction * 0.44 ), "Undo" ),
+		  mUndoButton( smallFont, -(int)( viewWidth/2 * 0.75 ) - 55, (int)( viewWidth*viewHeightFraction * 0.32 ), "Undo" ),
 		  mRedoButton( smallFont, mUndoButton.getPosition().x + 60, mUndoButton.getPosition().y, "Redo" ),
 		  
 		  
@@ -331,6 +332,24 @@ EditorScenePage::EditorScenePage()
     
     mCellMoveDelayField.addActionListener( this );
     mPersonMoveDelayField.addActionListener( this );
+
+
+    if( viewHeight * 0.32 - viewHeight * 0.15 < 180  ) {
+        mUndoButton.setPosition( -(int)( viewWidth/2 * 0.75 ) - 55, viewHeight/2 - 90 - 30 );
+        mRedoButton.setPosition( mUndoButton.getPosition().x + 60, mUndoButton.getPosition().y  );
+        mDeleteButton.setPosition( (int)( viewWidth/2 * 0.75 ), mUndoButton.getPosition().y - 70  );
+        mSaveTestMapButton.setPosition( (int)( viewWidth/2 * 0.75 ), mUndoButton.getPosition().y - 35  );
+        mSaveNewButton.setPosition( (int)( viewWidth/2 * 0.75 ) + 30, mUndoButton.getPosition().y  );
+        mClearSceneButton.setPosition( (int)( viewWidth/2 * 0.75 ) - 50, mUndoButton.getPosition().y  );
+        mReplaceButton.setPosition( (int)( viewWidth/2 * 0.75 ), mUndoButton.getPosition().y + 35  );
+        
+        mConfirmReplaceButton.setPosition( mReplaceButton.getPosition().x, mReplaceButton.getPosition().y );
+        mNextSceneButton.setPosition( mReplaceButton.getPosition().x + 60, mReplaceButton.getPosition().y );
+        mPrevSceneButton.setPosition( mReplaceButton.getPosition().x - 60, mReplaceButton.getPosition().y );
+        
+        mGroundPicker.setPosition( (int)( viewWidth/2 * 0.75 ), mUndoButton.getPosition().y - 180 );
+        mObjectPicker.setPosition( -(int)( viewWidth/2 * 0.75 ), mUndoButton.getPosition().y - 180 );
+    }
 
 
     for( int i=0; i<4; i++ ) {
