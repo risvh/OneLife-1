@@ -1158,7 +1158,7 @@ float initObjectBankStep() {
                             r->rightBlockingRadius > 0 );
 
                 if( r->wide ) {
-                    r->drawBehindPlayer = true;
+                    // r->drawBehindPlayer = true;
                     
                     if( r->leftBlockingRadius > maxWideRadius ) {
                         maxWideRadius = r->leftBlockingRadius;
@@ -4010,7 +4010,7 @@ int addObject( const char *inDescription,
     r->wide = ( r->leftBlockingRadius > 0 || r->rightBlockingRadius > 0 );
     
     if( r->wide ) {
-        r->drawBehindPlayer = true;
+        // r->drawBehindPlayer = true;
         
         if( r->leftBlockingRadius > maxWideRadius ) {
             maxWideRadius = r->leftBlockingRadius;
