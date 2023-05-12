@@ -40,7 +40,10 @@ class SettingsPage : public GamePage, public ActionListener {
         int mOldFullscreenSetting;
         int mOldBorderlessSetting;
         int mEnableNudeSetting;
-        
+#ifdef USE_DISCORD
+        int mDiscordRichPresenceSetting;
+        int mDiscordRichPresenceDetailsSetting;
+#endif // USE_DISCORD
         int mPage;
         
         SoundUsage mTestSound;
@@ -57,6 +60,9 @@ class SettingsPage : public GamePage, public ActionListener {
         TextButton mControlButton;
         TextButton mScreenButton;
         TextButton mSoundButton;
+#ifdef USE_DISCORD
+        TextButton mDiscordButton;
+#endif // USE_DISCORD
         TextButton mBackButton;
         
         TextButton mEditAccountButton;
@@ -86,5 +92,9 @@ class SettingsPage : public GamePage, public ActionListener {
         ValueSlider mMusicLoudnessSlider;
         ValueSlider mSoundEffectsLoudnessSlider;
 
-
+#ifdef USE_DISCORD
+        // Discord
+        CheckboxButton mEnableDiscordRichPresence;
+        CheckboxButton mEnableDiscordRichPresenceDetails;
+#endif // USE_DISCORD
     };

@@ -27616,3 +27616,17 @@ void LivingLifePage::updateLeadership() {
     
     }
 
+
+
+double LivingLifePage::getLastComputedAge() {
+    // for DiscordController
+    return ourAge;
+    }
+char LivingLifePage::receivedOurLiveObject() {
+    // for DiscordController
+    return mFirstServerMessagesReceived > 2;
+}
+
+char LivingLifePage::isTutorial() {
+    return 0 != mTutorialNumber;
+}
