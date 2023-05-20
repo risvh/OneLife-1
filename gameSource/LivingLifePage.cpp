@@ -27628,5 +27628,6 @@ char LivingLifePage::receivedOurLiveObject() {
 }
 
 char LivingLifePage::isTutorial() {
+    // for DiscordController
     return 0 != mTutorialNumber;
 }
