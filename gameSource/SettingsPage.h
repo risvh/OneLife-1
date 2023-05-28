@@ -43,6 +43,7 @@ class SettingsPage : public GamePage, public ActionListener {
 #ifdef USE_DISCORD
         int mDiscordRichPresenceSetting;
         int mDiscordRichPresenceStatusSetting;
+        int mDiscordShowAgeInStatusSetting;
         int mDiscordRichPresenceDetailsSetting;
         int mDiscordHideFirstNameInDetailsSetting;
 #endif // USE_DISCORD
@@ -98,6 +99,7 @@ class SettingsPage : public GamePage, public ActionListener {
         // Discord
         CheckboxButton mEnableDiscordRichPresence;
         CheckboxButton mEnableDiscordRichPresenceStatus;
+        CheckboxButton mEnableDiscordShowAgeInStatus;
         CheckboxButton mEnableDiscordRichPresenceDetails;
         CheckboxButton mDiscordHideFirstNameInDetails;
 #endif // USE_DISCORD

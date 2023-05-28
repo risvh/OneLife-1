@@ -13438,6 +13438,7 @@ void LivingLifePage::step() {
             // having trouble connecting.
             closeSocket( mServerSocket );
             mServerSocket = -1;
+            ourAge = 0;
 
             setWaiting( false );
             setSignal( "connectionFailed" );
@@ -13473,6 +13474,7 @@ void LivingLifePage::step() {
 
         closeSocket( mServerSocket );
         mServerSocket = -1;
+        ourAge = 0;
 
         if( mFirstServerMessagesReceived  ) {
             
@@ -14528,7 +14530,8 @@ void LivingLifePage::step() {
 
         closeSocket( mServerSocket );
         mServerSocket = -1;
-        
+        ourAge = 0;
+
         if( mDeathReason != NULL ) {
             delete [] mDeathReason;
             }
@@ -14610,6 +14613,7 @@ void LivingLifePage::step() {
             
             closeSocket( mServerSocket );
             mServerSocket = -1;
+            ourAge = 0;
 
             if( mDeathReason != NULL ) {
                 delete [] mDeathReason;
@@ -14660,7 +14664,8 @@ void LivingLifePage::step() {
         if( type == SHUTDOWN  || type == FORCED_SHUTDOWN ) {
             closeSocket( mServerSocket );
             mServerSocket = -1;
-            
+            ourAge = 0;
+
             setWaiting( false );
             setSignal( "serverShutdown" );
             
@@ -14670,7 +14675,8 @@ void LivingLifePage::step() {
         else if( type == SERVER_FULL ) {
             closeSocket( mServerSocket );
             mServerSocket = -1;
-            
+            ourAge = 0;
+
             setWaiting( false );
             setSignal( "serverFull" );
             
@@ -14939,6 +14945,7 @@ void LivingLifePage::step() {
 
                 closeSocket( mServerSocket );
                 mServerSocket = -1;
+                ourAge = 0;
 
                 setWaiting( false );
 
@@ -15056,7 +15063,8 @@ void LivingLifePage::step() {
         else if( type == REJECTED ) {
             closeSocket( mServerSocket );
             mServerSocket = -1;
-            
+            ourAge = 0;
+
             setWaiting( false );
             
             if( userReconnect ) {
@@ -26436,6 +26444,7 @@ void LivingLifePage::keyDown( unsigned char inASCII ) {
                 
                 closeSocket( mServerSocket );
                 mServerSocket = -1;
+                ourAge = 0;
                 
                 setWaiting( false );
                 setSignal( "twinCancel" );
@@ -27620,14 +27629,14 @@ void LivingLifePage::updateLeadership() {
 
 double LivingLifePage::getLastComputedAge() {
     // for DiscordController
-    return ourAge;
+    return HetuwMod::ourAge;
     }
-char LivingLifePage::receivedOurLiveObject() {
+char LivingLifePage::isLivingLife() {
     // for DiscordController
-    return mFirstServerMessagesReceived > 2;
-}
+    return mServerSocket != -1 && mFirstServerMessagesReceived > 2;
+    }
 
 char LivingLifePage::isTutorial() {
     // for DiscordController
     return 0 != mTutorialNumber;
-}
+    }
