@@ -26,6 +26,9 @@ static doublePair defaultAgeScaling[] = {
 
 
 void initAgeControl() {
+    
+    bool useSteamUpdate = SettingsManager::getIntSetting( "useSteamUpdate", 0 ) != 0;
+    
     babyHeadDownFactor = 
         SettingsManager::getFloatSetting( "babyHeadDownFactor", 0.6 );
     
@@ -38,7 +41,7 @@ void initAgeControl() {
     oldHeadForwardFactor = 
         SettingsManager::getFloatSetting( "oldHeadForwardFactor", 2 );
 
-    initAgeScaling();
+    if( !useSteamUpdate ) initAgeScaling();
 
     }
 
