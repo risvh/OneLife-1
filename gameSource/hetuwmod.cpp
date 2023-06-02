@@ -264,7 +264,7 @@ bool HetuwMod::isMovingInVog = false;
 HetuwMod::IntervalTimed HetuwMod::intervalVogMove(0.1);
 
 bool HetuwMod::phexIsEnabled = true;
-std::string HetuwMod::phexIp = "phexonelife.duckdns.org";
+std::string HetuwMod::phexIp = "chat.onelifeglobal.chat";
 int HetuwMod::phexPort = 6567;
 bool HetuwMod::debugPhex = false;
 
