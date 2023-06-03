@@ -238,7 +238,7 @@ static char *photoSig = NULL;
 void LivingLifePage::hetuwSetTakingPhoto(bool b) { takingPhoto = b; }
 
 // no moving for first 20 seconds of life
-static double noMoveAge = 0.00; //Changed to 0 since this mechanics isn't in 2HOL yet
+static double noMoveAge = 0.20;
 
 
 static double emotDuration = 10;
@@ -5600,7 +5600,8 @@ ObjectAnimPack LivingLifePage::drawLiveObject(
         
         // draw young baby lying flat
         double rot = 0;
-        if( computeCurrentAgeNoOverride( inObj ) < noMoveAge ) {
+        if( mUsingSteam && // noMove mechanics not in 2HOL
+            computeCurrentAgeNoOverride( inObj ) < noMoveAge ) {
             hidePersonShadows( true );
             
             double shiftScale = 1.0;
@@ -23641,7 +23642,8 @@ void LivingLifePage::checkForPointerHit( PointerHitRecord *inRecord,
                     personClickOffsetX = clickOffsetX - personClickOffsetX;
                     personClickOffsetY = clickOffsetY - personClickOffsetY;
 
-                    if( computeCurrentAgeNoOverride( o ) < noMoveAge ) {
+                    if( mUsingSteam && // noMove mechanics not in 2HOL
+                        computeCurrentAgeNoOverride( o ) < noMoveAge ) {
                         // laying on ground
                         
                         // rotate
@@ -24389,7 +24391,8 @@ void LivingLifePage::pointerDown( float inX, float inY ) {
         
         return;
         }
-    else if( computeCurrentAgeNoOverride( ourLiveObject ) < noMoveAge ) {
+    else if( mUsingSteam && // noMove mechanics not in 2HOL
+             computeCurrentAgeNoOverride( ourLiveObject ) < noMoveAge ) {
         // to young to even move
         // ignore click
 
