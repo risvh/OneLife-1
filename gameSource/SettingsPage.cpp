@@ -57,6 +57,7 @@ SettingsPage::SettingsPage()
 		  mEnableFOVBox( 561, 128, 4 ),
 		  mEnableCenterCameraBox( 561, 52, 4 ),
           mEnableNudeBox( -335, 148, 4 ),
+          mOutputMapBox( 561, 52, 4 ),
           
           mUseCustomServerBox( -168, -148, 4 ),
           mCustomServerAddressField( mainFont, 306, -150, 14, false, 
@@ -155,6 +156,8 @@ SettingsPage::SettingsPage()
     addComponent( &mUseCustomServerBox );
     mUseCustomServerBox.addActionListener( this );
     
+    addComponent( &mOutputMapBox );
+    mOutputMapBox.addActionListener( this );
     addComponent( &mEnableNudeBox );
     mEnableNudeBox.addActionListener( this );
 	// addComponent( &mEnableCenterCameraBox );
@@ -235,6 +238,7 @@ SettingsPage::SettingsPage()
     mEnableFOVBox.setCursorTip( "ENABLE ZOOM-IN AND ZOOM-OUT WITH MOUSE WHEEL SCROLLING" );
     mEnableCenterCameraBox.setCursorTip( "ALWAYS CENTER THE CAMERA VIEW ON YOUR CHARACTER" );
     mEnableNudeBox.setCursorTip( "ENABLE NUDITY" );
+    mOutputMapBox.setCursorTip( "SAVE MAP FILES TO BE USED IN TOWN PLANNER" );
     
     mUseCustomServerBox.setCursorTip( "CONNECT TO A CUSTOM SERVER" );
     mCustomServerAddressField.setCursorTip( "CUSTOM SERVER ADDRESS" );
@@ -277,6 +281,12 @@ SettingsPage::SettingsPage()
         SettingsManager::getIntSetting( "nudeEnabled", 1 );
 
     mEnableNudeBox.setToggled( mEnableNudeSetting );
+
+
+    mOldOutputMapSetting = 
+        SettingsManager::getIntSetting( "outputMapOn", 0 );
+
+    mOutputMapBox.setToggled( mOldOutputMapSetting );
     
 
 #ifdef USE_DISCORD
@@ -369,6 +379,11 @@ void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
         //start ignoring the nudity sprites every times it draws a new object
         //mRestartButton.setVisible( mEnableNudeSetting != newSetting );
         NudeToggle = newSetting;
+        }
+    else if( inTarget == &mOutputMapBox ) {
+        int newSetting = mOutputMapBox.getToggled();
+        
+        SettingsManager::setSetting( "outputMapOn", newSetting );
         }
 	else if( inTarget == &mUseCustomServerBox ) {
         mCustomServerAddressField.setVisible( mPage == 0 && mUseCustomServerBox.getToggled() );
@@ -646,6 +661,15 @@ void SettingsPage::draw( doublePair inViewCenter,
         mainFont->drawString( "ENABLE NUDITY", pos, alignRight );
         }
         
+    if( mOutputMapBox.isVisible() ) {
+        doublePair pos = mOutputMapBox.getPosition();
+        
+        pos.x -= 30;
+        pos.y -= 2;
+
+        mainFont->drawString( "SAVE MAP FILES", pos, alignRight );
+        }
+        
     if( mUseCustomServerBox.isVisible() ) {
         doublePair pos = mUseCustomServerBox.getPosition();
         
@@ -866,6 +890,7 @@ void SettingsPage::updatePage() {
     mEnableFOVBox.setPosition( 0, lineSpacing * 3 );
     mEnableCenterCameraBox.setPosition( 0, lineSpacing * 2 );
     mEnableNudeBox.setPosition( 0, lineSpacing );
+    mOutputMapBox.setPosition( 0, 0 );
     mUseCustomServerBox.setPosition( 0, -lineSpacing );
     mCustomServerAddressField.setPosition( 180 - 16, -lineSpacing * 2 - lineSpacing/4 );
     mCustomServerPortField.setPosition( 180 - 16, -lineSpacing * 3  - lineSpacing/2 );
@@ -903,6 +928,7 @@ void SettingsPage::updatePage() {
     mEnableFOVBox.setVisible( mPage == 0 );
     mEnableCenterCameraBox.setVisible( mPage == 0 );
     mEnableNudeBox.setVisible( mPage == 0 );
+    mOutputMapBox.setVisible( mPage == 0 );
     mUseCustomServerBox.setVisible( mPage == 0 );
     mCustomServerAddressField.setVisible( mPage == 0 && mUseCustomServerBox.getToggled() );
     mCustomServerPortField.setVisible( mPage == 0 && mUseCustomServerBox.getToggled() );
@@ -950,7 +976,8 @@ void SettingsPage::updatePage() {
 
 bool SettingsPage::checkRestartRequired() {
     if( mOldFullscreenSetting != mFullscreenBox.getToggled() ||
-        mOldBorderlessSetting != mBorderlessBox.getToggled()
+        mOldBorderlessSetting != mBorderlessBox.getToggled() ||
+        mOldOutputMapSetting != mOutputMapBox.getToggled()
         ) {
         setStatusDirect( "RESTART REQUIRED##FOR NEW SETTINGS TO TAKE EFFECT", true );
         // Do not show RESTART button when setting page is accessed mid-game

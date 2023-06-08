@@ -40,6 +40,7 @@ class SettingsPage : public GamePage, public ActionListener {
         int mOldFullscreenSetting;
         int mOldBorderlessSetting;
         int mEnableNudeSetting;
+        int mOldOutputMapSetting;
 #ifdef USE_DISCORD
         int mDiscordRichPresenceSetting;
         int mDiscordRichPresenceStatusSetting;
@@ -74,6 +75,7 @@ class SettingsPage : public GamePage, public ActionListener {
 		CheckboxButton mEnableFOVBox;
 		CheckboxButton mEnableCenterCameraBox;
 		CheckboxButton mEnableNudeBox;
+        CheckboxButton mOutputMapBox;
         
         CheckboxButton mUseCustomServerBox;
         TextField mCustomServerAddressField;
