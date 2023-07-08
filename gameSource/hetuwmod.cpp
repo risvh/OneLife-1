@@ -3447,7 +3447,7 @@ bool HetuwMod::livingLifeKeyDown(unsigned char inASCII) {
 	}
 	if (!commandKey && isCharKey(inASCII, charKey_ShowPlayersInRange)) {
 		iDrawPlayersInRangePanel++;
-		if (iDrawPlayersInRangePanel >= 3) iDrawPlayersInRangePanel = 0;
+		if (iDrawPlayersInRangePanel >= 4) iDrawPlayersInRangePanel = 0;
 		return true;
 	}
 	if (!commandKey && isCharKey(inASCII, charKey_ShowDeathMessages)) {
@@ -4278,6 +4278,9 @@ void HetuwMod::updatePlayersInRangePanel() {
 				continue;
 		}
 
+		// Players in family only
+		if (iDrawPlayersInRangePanel == 2 && !isRelated(o)) continue;
+
 		playersInRangeNum++;
 
 		ObjectRecord *obj = getObject(o->displayID);
@@ -4708,7 +4711,11 @@ void HetuwMod::drawPlayersInRangePanel() {
 		if (playersInRangeNum < 10) sprintf(text, "PLAYERS IN RANGE:   %d", playersInRangeNum);
 		else if (playersInRangeNum < 100) sprintf(text, "PLAYERS IN RANGE:  %d", playersInRangeNum);
 		else sprintf(text, "PLAYERS IN RANGE: %d", playersInRangeNum);
-	} else {
+	} else if (iDrawPlayersInRangePanel == 2) { 
+		if (playersInRangeNum < 10) sprintf(text, "PLAYERS IN FAMILY:   %d", playersInRangeNum);
+		else if (playersInRangeNum < 100) sprintf(text, "PLAYERS IN FAMILY:  %d", playersInRangeNum);
+		else sprintf(text, "PLAYERS IN FAMILY: %d", playersInRangeNum);
+	} else if (iDrawPlayersInRangePanel == 3) { 
 		if (playersInRangeNum < 10) sprintf(text, "PLAYERS ON SERVER:   %d", playersInRangeNum);
 		else if (playersInRangeNum < 100) sprintf(text, "PLAYERS ON SERVER:  %d", playersInRangeNum);
 		else sprintf(text, "PLAYERS ON SERVER: %d", playersInRangeNum);
