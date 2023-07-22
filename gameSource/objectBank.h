@@ -82,6 +82,10 @@ typedef struct ObjectRecord {
         // note that objects cannot be BOTH heldInHand and rideable
         // (rideable overrides heldInHand)
         char rideable;
+        
+        // index of AnimType to be used when this object is ridden
+        // default is -1
+        int ridingAnimationIndex;
 
         
         
@@ -606,6 +610,7 @@ int addObject( const char *inDescription,
                int inMinPickupAge,
                char inHeldInHand,
                char inRideable,
+               int inRidingAnimationIndex,
                char inBlocksWalking,
                int inLeftBlockingRadius, int inRightBlockingRadius,
                char inDrawBehindPlayer,
