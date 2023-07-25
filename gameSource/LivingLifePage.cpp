@@ -21945,6 +21945,11 @@ void LivingLifePage::step() {
                 // but DO slow animations down
                 animSpeed /= heldObj->speedMult;
                 }
+            else if( heldObj->speedMult == 0.0 ) {
+                // keep playing animations at normal speed
+                // if the object stops movement entirely
+                animSpeed = BASE_SPEED;
+                }
             }
 
         double oldFrameCount = o->animationFrameCount;
