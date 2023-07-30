@@ -39,6 +39,8 @@
 
 #define NUM_YUM_SLIPS 4
 
+extern bool ShowUseOnObjectHoverSettingToggle;
+
 
 typedef struct LiveObject {
         int id;
