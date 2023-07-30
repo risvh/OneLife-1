@@ -48,7 +48,8 @@ class SettingsPage : public GamePage, public ActionListener {
         int mDiscordRichPresenceDetailsSetting;
         int mDiscordHideFirstNameInDetailsSetting;
 #endif // USE_DISCORD
-            int mPage;
+        int mPage;
+        int mAdvancedShowUseOnObjectHoverKeybindSetting;
         
         SoundUsage mTestSound;
 
@@ -67,6 +68,8 @@ class SettingsPage : public GamePage, public ActionListener {
 #ifdef USE_DISCORD
         TextButton mDiscordButton;
 #endif // USE_DISCORD
+        TextButton mAdvancedButton;
+
         TextButton mBackButton;
         
         TextButton mEditAccountButton;
@@ -105,4 +108,6 @@ class SettingsPage : public GamePage, public ActionListener {
         CheckboxButton mEnableDiscordRichPresenceDetails;
         CheckboxButton mDiscordHideFirstNameInDetails;
 #endif // USE_DISCORD
+
+        CheckboxButton mEnableAdvancedShowUseOnObjectHoverKeybind;
     };
