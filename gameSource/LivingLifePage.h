@@ -553,6 +553,8 @@ class LivingLifePage : public GamePage, public ActionListener {
 			
 		doublePair minitechGetLastScreenViewCenter();
 		std::string minitechGetDisplayObjectDescription(int objId);
+        std::string minitechGetObjectDescriptionComment(int objId);
+        std::string minitechGetObjectDescriptionTagData(std::string &objComment);
 		bool minitechSayFieldIsFocused() { return mSayField.isFocused(); }
 
 		void hetuwSetPanelOffsets();
