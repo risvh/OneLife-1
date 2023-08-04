@@ -488,6 +488,29 @@ vector<bool> minitech::getObjIsCloseVector() {
 	return objIsClose;
 }
 
+string minitech::getObjDescriptionComment(int objId) {
+    string objFullDesc = livingLifePage->minitechGetFullObjectDescription(objId);
+    int poundPos = objFullDesc.find("#");
+    if (poundPos != -1) {
+        return objFullDesc.substr(poundPos + 1);
+    }
+    return "";
+}
+
+string minitech::getObjDescriptionTagData( const string &objComment, const char* tagName ) {
+
+    string tagData = "";
+    vector<string> parts = Tokenize( objComment, "[#]+" );
+    for ( int j=0; j<(int)parts.size(); j++ ) {
+        if( parts[j].rfind(tagName, 0) == 0 ) {
+            tagData = parts[j];
+        }
+    }
+
+    return tagData;
+}
+
+
 bool minitech::isUncraftable(int objId) {
     if( objId <= 0 ) return false;
     int d = getObjectDepth( objId );
@@ -950,13 +973,12 @@ vector<TransRecord*> minitech::sortProdTrans(vector<TransRecord*> unsortedTrans)
 	return temp;
 }
 
-static void drawUseCaption(
-	int objId, LivingLifePage &livingLifePage,
-	doublePair &captionPos, int tinyLineHeight) {
+static void drawUseCaption( int objId, doublePair &captionPos, int tinyLineHeight ) {
 
-	string objComment = livingLifePage.minitechGetObjectDescriptionComment(objId);
+    string objComment = minitech::getObjDescriptionComment(objId);
 	string displayComment = objComment;
-	string tagData = livingLifePage.minitechGetObjectDescriptionTagData(objComment, " USE");
+	string tagData = minitech::getObjDescriptionTagData(objComment, " USE");
+
 	if( !tagData.empty() && !minitech::showCommentsAndTagsInObjectDescription ) { 
 		displayComment = tagData; 
 	}
@@ -1474,7 +1496,7 @@ void minitech::updateDrawTwoTech() {
 				
 				string objName = livingLifePage->minitechGetDisplayObjectDescription(id);
 				drawStr(objName, captionPos, "tinyHandwritten", true, true);
-				drawUseCaption(id, *livingLifePage, captionPos, tinyLineHeight);
+				drawUseCaption(id, captionPos, tinyLineHeight);
 				}
 			}
 	}
@@ -1546,8 +1568,7 @@ void minitech::updateDrawTwoTech() {
 		doublePair captionPos = {iconCen.x, iconCen.y + iconCaptionYOffset};
 		string objName = livingLifePage->minitechGetDisplayObjectDescription(currentHintObjId);
 		drawStr(objName, captionPos, "tinyHandwritten", true, true);
-		
-		drawUseCaption(currentHintObjId, *livingLifePage, captionPos, tinyLineHeight);
+		drawUseCaption(currentHintObjId, captionPos, tinyLineHeight);
 	}
 	
 	if (showBar) {
