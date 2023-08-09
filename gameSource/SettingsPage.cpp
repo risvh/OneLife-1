@@ -13,7 +13,6 @@
 #include "musicPlayer.h"
 #include "soundBank.h"
 #include "objectBank.h"
-#include "LivingLifePage.h"
 #include "buttonStyle.h"
 
 #ifdef USE_DISCORD
@@ -29,6 +28,10 @@ extern float musicLoudness;
 extern bool showingInGameSettings;
 
 static bool useSteamUpdate = false;
+
+// defined in LivingLifePage.cpp
+extern bool ShowUseOnObjectHoverSettingToggle;
+extern bool isShowUseOnObjectHoverKeybindEnabled;
 
 #ifdef USE_DISCORD
 // extern from DiscordController.h
@@ -107,6 +110,23 @@ SettingsPage::SettingsPage()
     
     addComponent( &mBackground );
     
+    // Advanced
+    addComponent(&mEnableAdvancedShowUseOnObjectHoverKeybind);
+    mEnableAdvancedShowUseOnObjectHoverKeybind.addActionListener(this);
+    
+#ifdef USE_DISCORD
+    // Discord
+    addComponent(&mDiscordHideFirstNameInDetails);
+    mDiscordHideFirstNameInDetails.addActionListener(this);
+    addComponent(&mEnableDiscordRichPresenceDetails);
+    mEnableDiscordRichPresenceDetails.addActionListener(this);
+    addComponent(&mEnableDiscordShowAgeInStatus);
+    mEnableDiscordShowAgeInStatus.addActionListener(this);
+    addComponent(&mEnableDiscordRichPresenceStatus);
+    mEnableDiscordRichPresenceStatus.addActionListener(this);
+    addComponent(&mEnableDiscordRichPresence);
+    mEnableDiscordRichPresence.addActionListener(this);
+#endif // USE_DISCORD
     
     // Sound
     addComponent( &mSoundEffectsLoudnessSlider );
@@ -143,7 +163,6 @@ SettingsPage::SettingsPage()
     mEnableKActionsBox.addActionListener( this );
     
     // Gameplay
-    
     setButtonStyle( &mPasteButton );
     addComponent( &mPasteButton );
     mPasteButton.addActionListener( this );
@@ -169,6 +188,18 @@ SettingsPage::SettingsPage()
     mEnableFOVBox.addActionListener( this );
     
     // Left pane
+    setButtonStyle(&mAdvancedButton);
+    mAdvancedButton.setSize(175, 60);
+    addComponent(&mAdvancedButton);
+    mAdvancedButton.addActionListener(this);
+    
+#ifdef USE_DISCORD
+    setButtonStyle(&mDiscordButton);
+    mDiscordButton.setSize(175, 60);
+    addComponent(&mDiscordButton);
+    mDiscordButton.addActionListener(this);
+#endif // USE_DISCORD
+    
     setButtonStyle( &mBackButton );
     mBackButton.setSize( 175, 60 );
     addComponent( &mBackButton );
@@ -194,17 +225,7 @@ SettingsPage::SettingsPage()
     addComponent( &mGameplayButton );
     mGameplayButton.addActionListener( this );
 
-#ifdef USE_DISCORD
-    setButtonStyle(&mDiscordButton);
-    mDiscordButton.setSize(175, 60);
-    addComponent(&mDiscordButton);
-    mDiscordButton.addActionListener(this);
-#endif // USE_DISCORD
 
-    setButtonStyle(&mAdvancedButton);
-    mAdvancedButton.setSize(175, 60);
-    addComponent(&mAdvancedButton);
-    mAdvancedButton.addActionListener(this);
 
     setButtonStyle( &mRestartButton );
     mRestartButton.setSize( 175, 60 );
@@ -243,7 +264,6 @@ SettingsPage::SettingsPage()
 #ifdef USE_DISCORD
     mDiscordButton.setCursorTip("DISCORD RICH PRESENCE SETTINGS");
 #endif // USE_DISCORD
-
     mAdvancedButton.setCursorTip("ADVANCED GAMEPLAY SETTINGS");
 
     mBackButton.setCursorTip( "GO BACK" );
@@ -333,7 +353,7 @@ SettingsPage::SettingsPage()
 #endif // USE_DISCORD
 
     mAdvancedShowUseOnObjectHoverKeybindSetting = 
-        SettingsManager::getIntSetting("advanced/showUseOnObjectHoverKeybind", 0);
+        SettingsManager::getIntSetting("showUseOnObjectHoverKeybind", 0);
 
     mEnableAdvancedShowUseOnObjectHoverKeybind.setToggled(
         mAdvancedShowUseOnObjectHoverKeybindSetting);
@@ -610,9 +630,10 @@ void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
     else if ( inTarget == &mEnableAdvancedShowUseOnObjectHoverKeybind ) {
         int newSetting = mEnableAdvancedShowUseOnObjectHoverKeybind.getToggled();
         mAdvancedShowUseOnObjectHoverKeybindSetting = newSetting;
-        SettingsManager::setSetting("advanced/showUseOnObjectHoverKeybind",
+        SettingsManager::setSetting("showUseOnObjectHoverKeybind",
                                     newSetting);
         ShowUseOnObjectHoverSettingToggle = (bool)newSetting;
+        if( ShowUseOnObjectHoverSettingToggle ) isShowUseOnObjectHoverKeybindEnabled = true;
     }
 
     checkRestartRequired();
@@ -968,6 +989,7 @@ void SettingsPage::updatePage() {
 #endif // USE_DISCORD
 
     mEnableAdvancedShowUseOnObjectHoverKeybind.setPosition(0, 3 * lineSpacing);
+    
     mEnableFOVBox.setVisible( mPage == 0 );
     mEnableCenterCameraBox.setVisible( mPage == 0 );
     mEnableNudeBox.setVisible( mPage == 0 );
@@ -1007,6 +1029,7 @@ void SettingsPage::updatePage() {
 #endif // USE_DISCORD
 
     mEnableAdvancedShowUseOnObjectHoverKeybind.setVisible(mPage == 5);
+    
     mGameplayButton.setActive( mPage != 0 );
     mControlButton.setActive( mPage != 1 );
     mScreenButton.setActive( mPage != 2 );

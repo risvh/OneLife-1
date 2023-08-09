@@ -156,7 +156,7 @@ static int holdingYumOrMeh = 0;
 static char shouldMoveCamera = true;
 
 bool ShowUseOnObjectHoverSettingToggle = false;
-static bool isShowUseOnObjectHoverKeybindEnabled = false;
+bool isShowUseOnObjectHoverKeybindEnabled = false;
 
 
 extern double viewWidth;
@@ -180,8 +180,6 @@ static char vogMode = false;
 static char vogModeActuallyOn = false;
 
 static doublePair vogPos = { 0, 0 };
-
-
 
 static char vogPickerOn = false;
 
@@ -11790,7 +11788,7 @@ void LivingLifePage::draw( doublePair inViewCenter,
                     stringUpper, 1.0, 100000.0, NULL, -1, &bgColor, &txtColor, true );
 
                 const bool isShowUseOnObjectHoverIsActive = 
-                    ShowUseOnObjectHoverSettingToggle  && isShowUseOnObjectHoverKeybindEnabled;
+                    ShowUseOnObjectHoverSettingToggle && isShowUseOnObjectHoverKeybindEnabled;
 
                 if(isShowUseOnObjectHoverIsActive && mCurMouseOverID > 0) {      
                     std::string objComment = minitech::getObjDescriptionComment(mCurMouseOverID);
@@ -26361,10 +26359,10 @@ void LivingLifePage::keyDown( unsigned char inASCII ) {
 
 
     if (!vogMode && !vogPickerOn) {
-        int keyCode_u = 85;
-        if (shiftKey && inASCII == keyCode_u) {
+        int keyCode_b = 66;
+        if (shiftKey && inASCII == keyCode_b) {
             bool isSettingEnabled = 
-                SettingsManager::getIntSetting("advanced/showUseOnObjectHoverKeybind", 0);
+                SettingsManager::getIntSetting("showUseOnObjectHoverKeybind", 0);
             ShowUseOnObjectHoverSettingToggle = isSettingEnabled;
 
             if (isSettingEnabled) {
