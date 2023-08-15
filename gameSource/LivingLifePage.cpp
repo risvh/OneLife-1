@@ -11784,7 +11784,7 @@ void LivingLifePage::draw( doublePair inViewCenter,
                 FloatColor bgColor = { 0.05, 0.05, 0.05, 1.0 };
                 FloatColor txtColor = { 1, 1, 1, 1 };
                 drawChalkBackgroundString( 
-                    {lastMouseX + 16 * gui_fov_scale_hud, lastMouseY - 16 * gui_fov_scale_hud}, 
+                    {lastMouseX + 16, lastMouseY - 16}, 
                     stringUpper, 1.0, 100000.0, NULL, -1, &bgColor, &txtColor, true );
 
                 const bool isShowUseOnObjectHoverIsActive = 
@@ -11803,7 +11803,7 @@ void LivingLifePage::draw( doublePair inViewCenter,
                     if(!displayedComment.empty() && isAllDigits(displayedComment)) {
                         char *display = autoSprintf("USE: %s", displayedComment.c_str());
                         drawChalkBackgroundString( 
-                            {lastMouseX + 22 * gui_fov_scale_hud, lastMouseY - 34 * gui_fov_scale_hud},
+                            {lastMouseX + 22, lastMouseY - 34},
                             display, 1.0, 100000.0, NULL, -1, &bgColor, &txtColor, true );
                         
                         delete [] display;
