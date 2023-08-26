@@ -11781,12 +11781,10 @@ void LivingLifePage::draw( doublePair inViewCenter,
 			// Moved to be cursor-tips
             if( ! mXKeyDown )
             if( mCurMouseOverID != 0 ) {
+                
                 FloatColor bgColor = { 0.05, 0.05, 0.05, 1.0 };
                 FloatColor txtColor = { 1, 1, 1, 1 };
-                drawChalkBackgroundString( 
-                    {lastMouseX + 16, lastMouseY - 16}, 
-                    stringUpper, 1.0, 100000.0, NULL, -1, &bgColor, &txtColor, true );
-
+                
                 const bool isShowUseOnObjectHoverIsActive = 
                     ShowUseOnObjectHoverSettingToggle && isShowUseOnObjectHoverKeybindEnabled;
 
@@ -11803,12 +11801,16 @@ void LivingLifePage::draw( doublePair inViewCenter,
                     if(!displayedComment.empty() && isAllDigits(displayedComment)) {
                         char *display = autoSprintf("USE: %s", displayedComment.c_str());
                         drawChalkBackgroundString( 
-                            {lastMouseX + 22, lastMouseY - 34},
-                            display, 1.0, 100000.0, NULL, -1, &bgColor, &txtColor, true );
+                            {lastMouseX + 22 * HetuwMod::guiScale, lastMouseY - 34 * HetuwMod::guiScale},
+                            display, 1.0, 100000.0, NULL, -1, &bgColor, &txtColor, true, true );
                         
                         delete [] display;
                     }                
                 }
+                
+                drawChalkBackgroundString( 
+                    {lastMouseX + 16 * HetuwMod::guiScale, lastMouseY - 16 * HetuwMod::guiScale}, 
+                    stringUpper, 1.0, 100000.0, NULL, -1, &bgColor, &txtColor, true, true );
             }
             
             delete [] stringUpper;
