@@ -11784,35 +11784,42 @@ void LivingLifePage::draw( doublePair inViewCenter,
                 
                 FloatColor bgColor = { 0.05, 0.05, 0.05, 1.0 };
                 FloatColor txtColor = { 1, 1, 1, 1 };
-                
-                const bool isShowUseOnObjectHoverIsActive = 
+
+                const bool isShowUseOnObjectHoverActive =
                     ShowUseOnObjectHoverSettingToggle && isShowUseOnObjectHoverKeybindEnabled;
 
-                if(isShowUseOnObjectHoverIsActive && mCurMouseOverID > 0) {      
-                    std::string objComment = minitech::getObjDescriptionComment(mCurMouseOverID);
+                if( isShowUseOnObjectHoverActive ) {
+                  const int playerSelfID = -99;
+                  std::string objComment = "";
+                  if( mCurMouseOverID == playerSelfID && ourLiveObject->holdingID > 0 ) {
+                    objComment = minitech::getObjDescriptionComment(ourLiveObject->holdingID);
+                    }
+                  else if( mCurMouseOverID > 0 ) {
+                    objComment = minitech::getObjDescriptionComment(mCurMouseOverID);
+                    }
+
                     std::string displayedComment = objComment;
                     std::string tagName = " USE";
                     std::string tagData = minitech::getObjDescriptionTagData(objComment, tagName.c_str());
 
-                    if(!tagData.empty()) { 
+                    if( !tagData.empty() ) {
                         std::string remainingUseCount = tagData.substr(tagName.size() + 1); 
                         displayedComment = remainingUseCount;
                         }
-                    if(!displayedComment.empty() && isAllDigits(displayedComment)) {
+                    if( !displayedComment.empty() && isAllDigits(displayedComment) ) {
                         char *display = autoSprintf("USE: %s", displayedComment.c_str());
                         drawChalkBackgroundString( 
                             {lastMouseX + 22 * HetuwMod::guiScale, lastMouseY - 34 * HetuwMod::guiScale},
                             display, 1.0, 100000.0, NULL, -1, &bgColor, &txtColor, true, true );
                         
                         delete [] display;
-                    }                
-                }
-                
+                        }
+                    }
+                    
                 drawChalkBackgroundString( 
                     {lastMouseX + 16 * HetuwMod::guiScale, lastMouseY - 16 * HetuwMod::guiScale}, 
                     stringUpper, 1.0, 100000.0, NULL, -1, &bgColor, &txtColor, true, true );
-            }
-            
+                }
             delete [] stringUpper;
             }
         else {
