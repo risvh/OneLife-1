@@ -26405,7 +26405,7 @@ void LivingLifePage::keyDown( unsigned char inASCII ) {
 	bool shiftKey = isShiftKeyDown();
 
 
-    if (!vogMode && !vogPickerOn) {
+    if (!vogMode && !vogPickerOn && !mSayField.isFocused()) {
         int keyCode_b = 66;
         if (shiftKey && inASCII == keyCode_b) {
             bool isSettingEnabled = 
