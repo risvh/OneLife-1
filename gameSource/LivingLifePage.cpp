@@ -16215,6 +16215,8 @@ void LivingLifePage::step() {
                 if( !( mFirstServerMessagesReceived & 1 ) ) {
                     // first map chunk just recieved
                     
+                    isTrippingEffectOn = isTripping();
+                    
                     char found = false;
                     int closestX = 0;
                     int closestY = 0;
