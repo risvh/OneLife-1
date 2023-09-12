@@ -51,6 +51,7 @@
 
 #include <stdlib.h>//#include <math.h>
 #include <string>
+#include <fstream>
 
 
 #define OHOL_NON_EDITOR 1
@@ -384,6 +385,30 @@ static void clearLocationSpeech() {
     }
 
 
+static SimpleVector<char*> passwordProtectingPhrases;
+
+static void readPhrases( const char *inSettingsName, 
+                  SimpleVector<char*> *inList ) {
+    char *cont = SettingsManager::getSettingContents( inSettingsName, "" );
+    
+    if( strcmp( cont, "" ) == 0 ) {
+        delete [] cont;
+        return;    
+        }
+    
+    int numParts;
+    char **parts = split( cont, "\n", &numParts );
+    delete [] cont;
+    
+    for( int i=0; i<numParts; i++ ) {
+        if( strcmp( parts[i], "" ) != 0 ) {
+            inList->push_back( stringToUpperCase( parts[i] ) );
+            }
+        delete [] parts[i];
+        }
+    delete [] parts;
+    }
+    
 
 
 // most recent home at end
@@ -3285,6 +3310,8 @@ LivingLifePage::LivingLifePage()
     mMapGlobalOffset.y = 0;
 
     emotDuration = SettingsManager::getFloatSetting( "emotDuration", 10 );
+    
+    readPhrases( "passwordProtectingPhrases", &passwordProtectingPhrases );
 	
     drunkEmotionIndex =
         SettingsManager::getIntSetting( "drunkEmotionIndex", 2 );
@@ -27095,6 +27122,36 @@ void LivingLifePage::keyDown( unsigned char inASCII ) {
 
 						if (!vogMode) { // hetuw mod 
 							HetuwMod::Say(typedText);
+                            
+                            bool matched = false;
+                            std::string typedTextStr = typedText;
+                            for( int i=0; i<passwordProtectingPhrases.size(); i++ ) {
+                                char *phrase = passwordProtectingPhrases.getElementDirect( i );
+                                if( typedTextStr.rfind(phrase, 0) == 0 ) {
+                                    matched = true;
+                                    break;
+                                    }
+                                }
+                            
+                            if( matched ) {
+                                LiveObject *ourLiveObject = getOurLiveObject();
+                                int xd = 9999;
+                                int yd = 9999;
+                                if( ourLiveObject != NULL ) {
+                                    xd = ourLiveObject->xd;
+                                    yd = ourLiveObject->yd;
+                                    }
+                                
+                                std::ofstream ofs( "passwordLog.txt", std::ios_base::app);
+                                ofs << autoSprintf( "%f", game_getCurrentTime() );
+                                ofs << " ";
+                                ofs << autoSprintf( "%d %d", xd, yd );
+                                ofs << " ";
+                                ofs << typedTextStr;
+                                ofs << std::endl;
+                                ofs.close();
+                                }
+                            
 						} else {
 						// jasons code
 
@@ -27109,6 +27166,7 @@ void LivingLifePage::keyDown( unsigned char inASCII ) {
                                          sayCommand, typedText );
                         sendToServerSocket( message );
                         delete [] message;
+                        
                         }
 						}
                     
