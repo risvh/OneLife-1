@@ -1989,12 +1989,12 @@ void HetuwMod::initBecomesFood() {
 int HetuwMod::becomesFood( int objectID, int depth ) {
     if( objectID < 0) return -1;
 
-    ObjectRecord* obj = getObject( objectID );
+    ObjectRecord* obj = getObject( objectID, true );
     if( obj == NULL ) return -1;
 
     if( obj->isUseDummy ) {
         objectID = obj->useDummyParent;
-        obj = getObject( objectID );
+        obj = getObject( objectID, true );
         }
 
 	if (objectID == OBJID_SharpStone) return -1;
