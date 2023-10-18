@@ -25726,6 +25726,22 @@ void LivingLifePage::pointerDown( float inX, float inY ) {
             
             char send = false;
             
+            bool targetIsTrulyPermanent = false;
+            if( modClick && ourLiveObject->holdingID != 0 &&
+                destID != 0 &&
+                getNumContainerSlots( destID ) == 0 &&
+                getObject( destID )->permanent
+                ) {
+                // target is permanent
+                // consider swapping if target has a pick-up transition
+                TransRecord *pickupTrans = getPTrans( 0, destID );
+                bool targetHasPickupTrans = 
+                    pickupTrans != NULL &&
+                    pickupTrans->newActor != 0 &&
+                    pickupTrans->newTarget == 0;
+                targetIsTrulyPermanent = !targetHasPickupTrans;
+                }
+            
             if( tryingToPickUpBaby ) {
                 action = "BABY";
                 if( p.hitOtherPerson ) {
@@ -25867,7 +25883,8 @@ void LivingLifePage::pointerDown( float inX, float inY ) {
             else if( modClick && ourLiveObject->holdingID != 0 &&
                      destID != 0 &&
                      getNumContainerSlots( destID ) == 0 &&
-                     ! getObject( destID )->permanent ) {
+                     ! targetIsTrulyPermanent
+                     ) {
                 action = "DROP";
                 nextActionDropping = true;
                 send = true;
