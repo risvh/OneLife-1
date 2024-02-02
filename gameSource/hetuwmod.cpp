@@ -3234,7 +3234,9 @@ void HetuwMod::causeDisconnect() {
 
 bool HetuwMod::isCharKey(unsigned char c, unsigned char key) {
 	char tKey = key;
-	return (c == key || c == toupper(tKey));
+	return (c == key || c == toupper(tKey) || 
+        c+64 == toupper(tKey) // ctrl + key
+        );
 }
 
 bool HetuwMod::addToTempInputString( unsigned char c, bool onlyNumbers, int minStrLen ) {
@@ -3549,57 +3551,57 @@ bool HetuwMod::livingLifeKeyDown(unsigned char inASCII) {
 	}
 
 	if (!shiftKey && !commandKey) {
-		if (inASCII == charKey_Up || inASCII == toupper(charKey_Up)) {
+		if (isCharKey(inASCII, charKey_Up)) {
 			upKeyDown = true;
 			stopAutoRoadRun = true;
 			return true;
 		}
-		if (inASCII == charKey_Left || inASCII == toupper(charKey_Left)) {
+		if (isCharKey(inASCII, charKey_Left)) {
 			leftKeyDown = true;
 			stopAutoRoadRun = true;
 			return true;
 		}
-		if (inASCII == charKey_Down || inASCII == toupper(charKey_Down)) {
+		if (isCharKey(inASCII, charKey_Down)) {
 			downKeyDown = true;
 			stopAutoRoadRun = true;
 			return true;
 		}
-		if (inASCII == charKey_Right || inASCII == toupper(charKey_Right)) {
+		if (isCharKey(inASCII, charKey_Right)) {
 			rightKeyDown = true;
 			stopAutoRoadRun = true;
 			return true;
 		}
 	} else if (commandKey) {
-		if (inASCII+64 == toupper(charKey_Up)) {
+		if (isCharKey(inASCII, charKey_Up)) {
 			actionBetaRelativeToMe( 0, 1 );
 			return true;
 		}
-		if (inASCII+64 == toupper(charKey_Left)) {
+		if (isCharKey(inASCII, charKey_Left)) {
 			actionBetaRelativeToMe( -1, 0 );
 			return true;
 		}
-		if (inASCII+64 == toupper(charKey_Down)) {
+		if (isCharKey(inASCII, charKey_Down)) {
 			actionBetaRelativeToMe( 0, -1 );
 			return true;
 		}
-		if (inASCII+64 == toupper(charKey_Right)) {
+		if (isCharKey(inASCII, charKey_Right)) {
 			actionBetaRelativeToMe( 1, 0 );
 			return true;
 		}
 	} else if (shiftKey) {
-		if (inASCII == charKey_Up || inASCII == toupper(charKey_Up)) {
+		if (isCharKey(inASCII, charKey_Up)) {
 			actionAlphaRelativeToMe( 0, 1 );
 			return true;
 		}
-		if (inASCII == charKey_Left || inASCII == toupper(charKey_Left)) {
+		if (isCharKey(inASCII, charKey_Left)) {
 			actionAlphaRelativeToMe( -1, 0 );
 			return true;
 		}
-		if (inASCII == charKey_Down || inASCII == toupper(charKey_Down)) {
+		if (isCharKey(inASCII, charKey_Down)) {
 			actionAlphaRelativeToMe( 0, -1 );
 			return true;
 		}
-		if (inASCII == charKey_Right || inASCII == toupper(charKey_Right)) {
+		if (isCharKey(inASCII, charKey_Right)) {
 			actionAlphaRelativeToMe( 1, 0 );
 			return true;
 		}
