@@ -25,6 +25,8 @@ extern Font * mainFont;
 
 extern float musicLoudness;
 
+extern int targetFramesPerSecond;
+
 extern bool showingInGameSettings;
 
 static bool useSteamUpdate = false;
@@ -85,8 +87,14 @@ SettingsPage::SettingsPage()
           
           // Screen
           mRedetectButton( mainFont, 153, 249, translate( "redetectButton" ) ),
+          mVsyncBox( 0, 208, 4 ),
           mFullscreenBox( 0, 128, 4 ),
           mBorderlessBox( 0, 168, 4 ),
+          mTargetFrameRateField( mainFont, -16, 232, 3, false, 
+                                 "", // no label
+                                 "0123456789",
+                                 NULL ),
+          mTrippingEffectDisabledBox( 0, 168, 4 ),
           
           // Sound
           mMusicLoudnessSlider( mainFont, 0, 40, 4, 200, 30,
@@ -137,11 +145,22 @@ SettingsPage::SettingsPage()
     // Screen
     addComponent( &mBorderlessBox );
     mBorderlessBox.addActionListener( this );
+    addComponent( &mTargetFrameRateField );
+    mTargetFrameRateField.addActionListener( this );
+    mTargetFrameRateField.setFireOnAnyTextChange( true );
+    addComponent( &mVsyncBox );
+    mVsyncBox.addActionListener( this );
     addComponent( &mFullscreenBox );
     mFullscreenBox.addActionListener( this );
     setButtonStyle( &mRedetectButton );
     addComponent( &mRedetectButton );
     mRedetectButton.addActionListener( this );
+    
+    mTargetFrameRateField.setInt( targetFramesPerSecond );
+
+    if( getCountingOnVsync() ) {
+        mTargetFrameRateField.setVisible( false );
+        }
     
     // Control
     addComponent( &mCursorScaleSlider );
@@ -303,6 +322,9 @@ SettingsPage::SettingsPage()
 
     mMusicStartTime = 0;
 
+    
+    mVsyncBox.setToggled( getCountingOnVsync() );
+
     mFullscreenBox.setToggled( mOldFullscreenSetting );
 
     mBorderlessBox.setVisible( mOldFullscreenSetting );
@@ -376,6 +398,34 @@ SettingsPage::~SettingsPage() {
 
 
 
+void SettingsPage::checkRestartButtonVisibility() {
+    int newVsyncSetting = 
+        SettingsManager::getIntSetting( "countingOnVsync", -1 );
+    
+    int newFullscreenSetting =
+        SettingsManager::getIntSetting( "fullscreen", 1 );
+    
+    int newBorderlessSetting =
+        SettingsManager::getIntSetting( "borderless", 0 );
+
+    if( getCountingOnVsync() != newVsyncSetting
+        ||
+        mOldFullscreenSetting != newFullscreenSetting
+        ||
+        mOldBorderlessSetting != newBorderlessSetting 
+        ||
+        ( mTargetFrameRateField.isVisible() && 
+          mTargetFrameRateField.getInt() != targetFramesPerSecond ) ) {
+
+        mRestartButton.setVisible( true );
+        }
+    else {
+        mRestartButton.setVisible( false );
+        }
+    }
+
+
+
 
 void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
     if( inTarget == &mBackButton ) {
@@ -401,15 +451,62 @@ void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
         setSignal( "editAccount" );
         setMusicLoudness( 0 );
         }
+    else if( inTarget == &mTargetFrameRateField ) {
+        
+        int newValue = mTargetFrameRateField.getInt();
+        
+        if( newValue > 0 ) {
+            
+            // if we're manually manipulating target frame rate
+            // any tweaked halfFrameRate setting should be cleared
+            SettingsManager::setSetting( "halfFrameRate", 0 );
+
+            SettingsManager::setSetting( "targetFrameRate", newValue );
+
+            // checkRestartButtonVisibility();
+            }
+        }
+    else if( inTarget == &mVsyncBox ) {
+        int newSetting = mVsyncBox.getToggled();
+        
+        SettingsManager::setSetting( "countingOnVsync", newSetting );
+        
+        // checkRestartButtonVisibility();
+
+        if( ! newSetting ) {
+            mTargetFrameRateField.setVisible( true );
+            mTargetFrameRateField.setInt( targetFramesPerSecond );
+            }
+        else {
+            mTargetFrameRateField.setVisible( false );
+            
+            // if we're manually manipulating target frame rate
+            // any tweaked halfFrameRate setting should be cleared
+            SettingsManager::setSetting( "halfFrameRate", 0 );
+            SettingsManager::setSetting( "targetFramesPerSecond",
+                                         targetFramesPerSecond );
+            }
+        }
     else if( inTarget == &mFullscreenBox ) {
         int newSetting = mFullscreenBox.getToggled();
         
         SettingsManager::setSetting( "fullscreen", newSetting );
+        
+        if( ! newSetting ) {
+            // can't be borderless if not fullscreen
+            SettingsManager::setSetting( "borderless", 0 );
+            mBorderlessBox.setToggled( false );
+            }
+        
+            
+        // checkRestartButtonVisibility();
         }
     else if( inTarget == &mBorderlessBox ) {
         int newSetting = mBorderlessBox.getToggled();
         
         SettingsManager::setSetting( "borderless", newSetting );
+        
+        // checkRestartButtonVisibility();
         }
 	else if( inTarget == &mEnableNudeBox ) {
         int newSetting = mEnableNudeBox.getToggled();
@@ -431,12 +528,60 @@ void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
         mCustomServerAddressField.setVisible( mPage == 0 && mUseCustomServerBox.getToggled() );
         mCustomServerPortField.setVisible( mPage == 0 && mUseCustomServerBox.getToggled() );
         }
-    else if( inTarget == &mRestartButton ||
-             inTarget == &mRedetectButton ) {
-        // always re-measure frame rate after relaunch
+    else if( inTarget == &mRedetectButton ) {
+        // redetect means start from scratch, detect vsync, etc.
         SettingsManager::setSetting( "targetFrameRate", -1 );
         SettingsManager::setSetting( "countingOnVsync", -1 );
         
+        char relaunched = relaunchGame();
+        
+        if( !relaunched ) {
+            printf( "Relaunch failed\n" );
+            setSignal( "relaunchFailed" );
+            }
+        else {
+            printf( "Relaunched... but did not exit?\n" );
+            setSignal( "relaunchFailed" );
+            }
+        }
+    else if( inTarget == &mRestartButton ) {
+             
+        int newVsyncSetting = 
+            SettingsManager::getIntSetting( "countingOnVsync", -1 );
+        
+        int newFullscreenSetting =
+            SettingsManager::getIntSetting( "fullscreen", 1 );
+        
+        int newBorderlessSetting =
+            SettingsManager::getIntSetting( "borderless", 0 );
+        
+
+        if( ( newVsyncSetting == 1 && ! getCountingOnVsync() )
+            ||
+            ( newVsyncSetting == 1 && 
+              newFullscreenSetting != mOldFullscreenSetting )
+            ||
+            ( newVsyncSetting == 1 && 
+              newBorderlessSetting != mOldBorderlessSetting ) ) {
+            
+            // re-measure frame rate after relaunch
+            // but only if counting on vsync AND if one of these things changed
+            
+            // 1.  We weren't counting on vsync before
+            // 2.  We've toggled fullscreen mode
+            // 3.  We've toggled borderless mode
+            
+            // if we're not counting on vsync, we shouldn't re-measure
+            // because measuring is only sensible if we're trying to detect
+            // our vsync-enforced frame rate
+            SettingsManager::setSetting( "targetFrameRate", -1 );
+            }
+        
+
+        // now that end-user can toggle vsync here, never clear
+        // the vsync setting when we re-launch
+
+
         char relaunched = relaunchGame();
         
         if( !relaunched ) {
@@ -641,7 +786,6 @@ void SettingsPage::actionPerformed( GUIComponent *inTarget ) {
     }
 
 
-extern int targetFramesPerSecond;
 
 
 void SettingsPage::draw( doublePair inViewCenter, 
@@ -649,7 +793,15 @@ void SettingsPage::draw( doublePair inViewCenter,
     setDrawColor( 1, 1, 1, 1 );
     
     if( mFullscreenBox.isVisible() ) {
-        doublePair pos = mFullscreenBox.getPosition();
+        
+        doublePair pos = mVsyncBox.getPosition();
+        
+        pos.x -= 24;
+        pos.y -= 2;
+        
+        mainFont->drawString( translate( "vsyncOn" ), pos, alignRight );
+        
+        pos = mFullscreenBox.getPosition();
         
         pos.x -= 30;
         pos.y -= 2;
@@ -672,22 +824,18 @@ void SettingsPage::draw( doublePair inViewCenter,
         pos.y += 52;
         pos.x -= 16;
         
-        if( getCountingOnVsync() ) {
-            mainFont->drawString( translate( "vsyncYes" ), pos, alignLeft );
-            }
-        else {
-            mainFont->drawString( translate( "vsyncNo" ), pos, alignLeft );
-            }
-        
         pos.y += 52;
 
+
+    if( ! mTargetFrameRateField.isVisible() ) {
         char *fpsString = autoSprintf( "%d", targetFramesPerSecond );
         
         mainFont->drawString( fpsString, pos, alignLeft );
         delete [] fpsString;
+        }
+    
 
-
-        pos.y += 52;
+    pos.y += 52;
 
         char *currentFPSString = autoSprintf( "%.2f", getRecentFrameRate() );
         
@@ -699,7 +847,7 @@ void SettingsPage::draw( doublePair inViewCenter,
         pos.x -= 30;
 
         pos.y += 52;
-        mainFont->drawString( translate( "vsyncOn" ), pos, alignRight );
+        
         pos.y += 52;
         mainFont->drawString( translate( "targetFPS" ), pos, alignRight );
         pos.y += 52;
@@ -975,6 +1123,8 @@ void SettingsPage::updatePage() {
     mMusicLoudnessSlider.setPosition( 0, lineSpacing / 2 );
     mSoundEffectsLoudnessSlider.setPosition( 0, - lineSpacing / 2 );
     
+    mTargetFrameRateField.setPosition( 5, lineSpacing );
+    mVsyncBox.setPosition( 0, 0 );
     mFullscreenBox.setPosition( 0, -lineSpacing );
     mBorderlessBox.setPosition( 0, -lineSpacing * 2 );
     mRedetectButton.setPosition( 160, lineSpacing * 2 );
@@ -1006,6 +1156,8 @@ void SettingsPage::updatePage() {
     mCursorScaleSlider.setVisible( mode > 0 && mCursorModeSet->isVisible() );
     
 
+    mTargetFrameRateField.setVisible( mPage == 2 && !mVsyncBox.getToggled() );
+    mVsyncBox.setVisible( mPage == 2 );
     mFullscreenBox.setVisible( mPage == 2 );
     mBorderlessBox.setVisible( mPage == 2 && mFullscreenBox.getToggled() );
     mRedetectButton.setVisible( mPage == 2 );
@@ -1046,7 +1198,9 @@ void SettingsPage::updatePage() {
 bool SettingsPage::checkRestartRequired() {
     if( mOldFullscreenSetting != mFullscreenBox.getToggled() ||
         mOldBorderlessSetting != mBorderlessBox.getToggled() ||
-        mOldOutputMapSetting != mOutputMapBox.getToggled()
+        mOldOutputMapSetting != mOutputMapBox.getToggled() ||
+        getCountingOnVsync() != mVsyncBox.getToggled() ||
+        ( mTargetFrameRateField.isVisible() && mTargetFrameRateField.getInt() != targetFramesPerSecond )
         ) {
         setStatusDirect( "RESTART REQUIRED##FOR NEW SETTINGS TO TAKE EFFECT", true );
         // Do not show RESTART button when setting page is accessed mid-game

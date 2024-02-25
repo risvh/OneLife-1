@@ -93,8 +93,11 @@ class SettingsPage : public GamePage, public ActionListener {
 
         // Screen
         TextButton mRedetectButton;
+        CheckboxButton mVsyncBox;
         CheckboxButton mFullscreenBox;
         CheckboxButton mBorderlessBox;
+        TextField mTargetFrameRateField;
+        CheckboxButton mTrippingEffectDisabledBox;
         
         // Sound
         ValueSlider mMusicLoudnessSlider;
@@ -110,4 +113,8 @@ class SettingsPage : public GamePage, public ActionListener {
 #endif // USE_DISCORD
 
         CheckboxButton mEnableAdvancedShowUseOnObjectHoverKeybind;
+        
+        
+        void checkRestartButtonVisibility();
+        
     };
