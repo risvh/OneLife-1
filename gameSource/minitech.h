@@ -64,7 +64,8 @@ public:
 	static bool isCategory(int objId);
 	static mouseListener* getMouseListenerByArea(
 		std::vector<mouseListener*>* listeners, doublePair posTL, doublePair posBR );
-	static GridPos getClosestTile(GridPos src, int objId);	
+	static GridPos getClosestTile(GridPos src, int objId, bool useDummiesAllowed);	
+	static bool hasUses(int objId);
 	static bool isUseDummy(int objId);
 	static bool isUseDummyAndNotLastUse(int objId);
 	static int getDummyUse(int objId);
@@ -110,6 +111,7 @@ public:
 	static int lastUseOrMake;
 	static int currentHintObjId;
 	static int lastHintObjId;
+    static bool currentHintTranRequiresFullUses;
 	static std::string lastHintStr;
     static bool lastHintSearchNoResults;
 	static bool changeHintObjOnTouch;

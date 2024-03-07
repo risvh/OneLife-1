@@ -59,6 +59,7 @@ int minitech::useOrMake;
 int minitech::lastUseOrMake;
 int minitech::currentHintObjId;
 int minitech::lastHintObjId;
+bool minitech::currentHintTranRequiresFullUses;
 string minitech::lastHintStr;
 bool minitech::lastHintSearchNoResults = false;
 bool minitech::changeHintObjOnTouch;
@@ -211,22 +212,22 @@ minitech::mouseListener* minitech::getMouseListenerByArea(
 	return listener;
 }
 
-GridPos minitech::getClosestTile(GridPos src, int objId) {
-	
-	objId = getDummyParent(objId);
-	
-	int *mMap = livingLifePage->mMap;
-		
-	int mMapOffsetX = livingLifePage->mMapOffsetX;
-	int mMapOffsetY = livingLifePage->mMapOffsetY;
-	
-	int pathOffsetX = pathFindingD/2 - currentX;
-	int pathOffsetY = pathFindingD/2 - currentY;
-	
-	float foundBestDist = 9999;
-	float foundBestX, foundBestY;
-	
-	bool tileFound = false;
+GridPos minitech::getClosestTile(GridPos src, int objId, bool useDummiesAllowed = true) {
+    
+    objId = getDummyParent(objId);
+    
+    int *mMap = livingLifePage->mMap;
+        
+    int mMapOffsetX = livingLifePage->mMapOffsetX;
+    int mMapOffsetY = livingLifePage->mMapOffsetY;
+    
+    int pathOffsetX = pathFindingD/2 - currentX;
+    int pathOffsetY = pathFindingD/2 - currentY;
+    
+    float foundBestDist = 9999;
+    int foundBestX, foundBestY;
+    
+    bool tileFound = false;
 
 	for( int y=0; y<pathFindingD; y++ ) {
 		int mapY = ( y - pathOffsetY ) + mMapD / 2 - mMapOffsetY;
@@ -241,9 +242,9 @@ GridPos minitech::getClosestTile(GridPos src, int objId) {
 
 				bool foundInThisTile = false;
 
-				int mapI = mapY * mMapD + mapX;
-				int id = mMap[mapI];
-				id = getDummyParent(id);
+                int mapI = mapY * mMapD + mapX;
+                int id = mMap[mapI];
+                if( useDummiesAllowed ) id = getDummyParent(id);
 
 				if (id == objId) {
 					float foundDist = sqrt(pow(src.y - mapY_abs, 2) + pow(src.x - mapX_abs, 2));
@@ -305,6 +306,13 @@ GridPos minitech::getClosestTile(GridPos src, int objId) {
 		foundPos = {foundBestX, foundBestY};
 	}
 	return foundPos;
+}
+
+bool minitech::hasUses(int objId) {
+    if (objId <= 0) return false;
+    ObjectRecord* o = getObject(objId);
+    if (o == NULL) return false;
+    return o->numUses > 1;
 }
 
 bool minitech::isUseDummy(int objId) {
@@ -1218,6 +1226,12 @@ void minitech::updateDrawTwoTech() {
 			} else {
 				drawObj(pos, trans->actor);
 			}
+            if (trans->actorMinUseFraction == 1.0f && hasUses(trans->actor)) {
+                doublePair chanceLinePos = pos;
+                float tinyLineHeight = 15.0*guiScale;
+                chanceLinePos.y -= tinyLineHeight;
+                drawStr("(FULL USE)", chanceLinePos, "tinyHandwritten", false);
+            }
 			if (iconAListener->mouseClick && trans->actor > 0) {
 				currentHintObjId = trans->actor;
 				if (compareObjUse(trans->actor, trans->newActor) == -1) currentHintObjId = getDummyParent(trans->actor);
@@ -1299,6 +1313,12 @@ void minitech::updateDrawTwoTech() {
 			} else {
 				drawObj(pos, trans->target);
 			}
+            if (trans->targetMinUseFraction == 1.0f && hasUses(trans->target)) {
+                doublePair chanceLinePos = pos;
+                float tinyLineHeight = 15.0*guiScale;
+                chanceLinePos.y -= tinyLineHeight;
+                drawStr("(FULL USE)", chanceLinePos, "tinyHandwritten", false);
+            }
 			if (iconBListener->mouseClick && trans->target > 0) {
 				currentHintObjId = trans->target;
 				if (compareObjUse(trans->target, trans->newTarget) == -1) currentHintObjId = getDummyParent(trans->target);
@@ -1428,7 +1448,7 @@ void minitech::updateDrawTwoTech() {
 		
 		if (highlightObjId > 0) {
 			GridPos currentPos = {currentX, currentY};
-			GridPos closestHintObjPos = getClosestTile(currentPos, highlightObjId);
+			GridPos closestHintObjPos = getClosestTile(currentPos, highlightObjId, !currentHintTranRequiresFullUses);
 			if ( !(closestHintObjPos.x == 9999 && closestHintObjPos.y == 9999) ) {
 				drawTileRect(closestHintObjPos.x, closestHintObjPos.y, "blue", true);
 			}
