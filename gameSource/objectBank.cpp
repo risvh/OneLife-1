@@ -1620,6 +1620,7 @@ float initObjectBankStep() {
                 r->spriteInvisibleWhenWorn = new int[ r->numSprites ];
                 r->spriteBehindSlots = new char[ r->numSprites ];
                 r->spriteInvisibleWhenContained = new char[ r->numSprites ];
+                r->spriteIgnoredWhenCalculatingCenterOffset = new char[ r->numSprites ];
 
 
                 r->spriteIsHead = new char[ r->numSprites ];
@@ -1743,6 +1744,7 @@ float initObjectBankStep() {
                     int invisRead = 0;
                     int invisWornRead = 0;
                     int behindSlotsRead = 0;
+                    int ignoredRead = 0;
                     
                     sscanf2( &next, lines, 
                             "invisHolding=%d,invisWorn=%d,behindSlots=%d", 
@@ -1764,6 +1766,17 @@ float initObjectBankStep() {
                         }
                     else {
                         r->spriteInvisibleWhenContained[i] = 0;
+                        }
+                    
+                    if( strstr( lines[next], "ignoredCont=" ) != NULL ) {
+                        ignoredRead = 0;
+                        sscanf( lines[next], "ignoredCont=%d", &ignoredRead );
+                        
+                        r->spriteIgnoredWhenCalculatingCenterOffset[i] = ignoredRead;
+                        next++;
+                        }
+                    else {
+                        r->spriteIgnoredWhenCalculatingCenterOffset[i] = 0;
                         }
                     }
                 
@@ -3061,6 +3074,7 @@ static void freeObjectRecord( int inID ) {
             delete [] idMap[inID]->spriteInvisibleWhenWorn;
             delete [] idMap[inID]->spriteBehindSlots;
             delete [] idMap[inID]->spriteInvisibleWhenContained;
+            delete [] idMap[inID]->spriteIgnoredWhenCalculatingCenterOffset;
 
             delete [] idMap[inID]->spriteIsHead;
             delete [] idMap[inID]->spriteIsBody;
@@ -3154,6 +3168,7 @@ void freeObjectBank() {
             delete [] idMap[i]->spriteInvisibleWhenWorn;
             delete [] idMap[i]->spriteBehindSlots;
             delete [] idMap[i]->spriteInvisibleWhenContained;
+            delete [] idMap[i]->spriteIgnoredWhenCalculatingCenterOffset;
 
             delete [] idMap[i]->spriteIsHead;
             delete [] idMap[i]->spriteIsBody;
@@ -3319,6 +3334,7 @@ int reAddObject( ObjectRecord *inObject,
                         inObject->spriteInvisibleWhenWorn,
                         inObject->spriteBehindSlots,
                         inObject->spriteInvisibleWhenContained,
+                        inObject->spriteIgnoredWhenCalculatingCenterOffset,
                         inObject->spriteIsHead,
                         inObject->spriteIsBody,
                         inObject->spriteIsBackFoot,
@@ -3645,6 +3661,7 @@ int addObject( const char *inDescription,
                int *inSpriteInvisibleWhenWorn,
                char *inSpriteBehindSlots,
                char *inSpriteInvisibleWhenContained,
+               char *inSpriteIgnoredWhenCalculatingCenterOffset,
                char *inSpriteIsHead,
                char *inSpriteIsBody,
                char *inSpriteIsBackFoot,
@@ -3907,6 +3924,9 @@ int addObject( const char *inDescription,
 
             lines.push_back( autoSprintf( "invisCont=%d", 
                                           inSpriteInvisibleWhenContained[i] ) );
+
+            lines.push_back( autoSprintf( "ignoredCont=%d", 
+                                          inSpriteIgnoredWhenCalculatingCenterOffset[i] ) );
 
             }
         
@@ -4199,6 +4219,7 @@ int addObject( const char *inDescription,
     r->spriteInvisibleWhenWorn = new int[ inNumSprites ];
     r->spriteBehindSlots = new char[ inNumSprites ];
     r->spriteInvisibleWhenContained = new char[ inNumSprites ];
+    r->spriteIgnoredWhenCalculatingCenterOffset = new char[ inNumSprites ];
 
     r->spriteIsHead = new char[ inNumSprites ];
     r->spriteIsBody = new char[ inNumSprites ];
@@ -4346,6 +4367,9 @@ int addObject( const char *inDescription,
             inNumSprites * sizeof( char ) );
 
     memcpy( r->spriteInvisibleWhenContained, inSpriteInvisibleWhenContained, 
+            inNumSprites * sizeof( char ) );
+
+    memcpy( r->spriteIgnoredWhenCalculatingCenterOffset, inSpriteIgnoredWhenCalculatingCenterOffset, 
             inNumSprites * sizeof( char ) );
 
 
@@ -6465,7 +6489,7 @@ doublePair getObjectCenterOffset( ObjectRecord *inObject ) {
             continue;
             }
             
-		if( inObject->spriteColor[i].r < 1.0 && inObject->spriteColor[i].r > 0.998 ) {
+		if( inObject->spriteIgnoredWhenCalculatingCenterOffset[i] ) {
 			// special flag to skip sprite when calculating position to draw object
 			continue;
 		}
@@ -6558,7 +6582,7 @@ doublePair getObjectBottomCenterOffset( ObjectRecord *inObject ) {
             continue;
             }
 			
-		if( inObject->spriteColor[i].r < 1.0 && inObject->spriteColor[i].r > 0.998 ) {
+		if( inObject->spriteIgnoredWhenCalculatingCenterOffset[i] ) {
 			// special flag to skip sprite when calculating position to draw object
 			continue;
 		}
