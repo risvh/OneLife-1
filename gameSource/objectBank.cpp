@@ -4980,17 +4980,8 @@ HoldingPos drawObject( ObjectRecord *inObject, doublePair inPos, double inRot,
         ObjectRecord *contained = getObject( inContainedIDs[i] );
         
 
-        doublePair centerOffset;
+        doublePair centerOffset = computeContainedCenterOffset( inObject, contained );
 
-        if( inObject->slotStyle == 0 ) {
-            centerOffset = getObjectCenterOffset( contained );
-            }
-        else if( inObject->slotStyle == 1 ) {
-            centerOffset = getObjectBottomCenterOffset( contained );
-            }
-        else if( inObject->slotStyle == 2 ) {
-            centerOffset = {0, 0};
-            }
 
         double rot = inRot;
         
@@ -6556,8 +6547,7 @@ doublePair getObjectCenterOffset( ObjectRecord *inObject ) {
     
 
     if( widestRecord == NULL ) {
-        doublePair result = { (double) inObject->containOffsetX, 
-                              (double) inObject->containOffsetY };
+        doublePair result = { 0, 0 };
         return result;
         }
     
@@ -6571,9 +6561,6 @@ doublePair getObjectCenterOffset( ObjectRecord *inObject ) {
 
     doublePair spriteCenter = add( inObject->spritePos[widestIndex], 
                                    centerOffset );
-
-    spriteCenter.x += inObject->containOffsetX;
-    spriteCenter.y += inObject->containOffsetY;
 
     return spriteCenter;
     
@@ -6675,8 +6662,7 @@ doublePair getObjectBottomCenterOffset( ObjectRecord *inObject ) {
     
 
     if( lowestRecord == NULL ) {
-        doublePair result = { (double) inObject->containOffsetBottomX, 
-                              (double) inObject->containOffsetBottomY };
+        doublePair result = { 0, 0 };
         return result;
         }
 
@@ -6689,9 +6675,6 @@ doublePair getObjectBottomCenterOffset( ObjectRecord *inObject ) {
 	
     wideCenter.y = lowestYPos + 14.0; // slot has height of 28.0
 
-
-    wideCenter.x += inObject->containOffsetBottomX;
-    wideCenter.y += inObject->containOffsetBottomY;
 
     return wideCenter;    
     }
@@ -6938,6 +6921,32 @@ void computeHeldDrawPos( HoldingPos inHoldingPos, doublePair inPos,
 
     *outHeldDrawPos = holdPos;
     *outHeldDrawRot = holdRot;
+    }
+
+
+
+doublePair computeContainedCenterOffset( ObjectRecord *inContainerObject, 
+                                         ObjectRecord *inContainedObject ) {
+                                         // char inFlipH ) {
+    
+    doublePair centerOffset;
+
+    if( inContainerObject->slotStyle == 0 ) {
+        centerOffset = getObjectCenterOffset( inContainedObject );
+        centerOffset.x += inContainedObject->containOffsetX;
+        centerOffset.y += inContainedObject->containOffsetY;
+        }
+    else if( inContainerObject->slotStyle == 1 ) {
+        centerOffset = getObjectBottomCenterOffset( inContainedObject );
+        centerOffset.x += inContainedObject->containOffsetBottomX;
+        centerOffset.y += inContainedObject->containOffsetBottomY;
+        }
+    else if( inContainerObject->slotStyle == 2 ) {
+        centerOffset = {0, 0};
+        }
+        
+    return centerOffset;
+        
     }
 
 

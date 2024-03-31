@@ -979,6 +979,11 @@ void setupNumericSprites( ObjectRecord *inObject, int inVarNumber,
 
 
 
+doublePair computeContainedCenterOffset( ObjectRecord *inContainerObject, 
+                                         ObjectRecord *inContainedObject );
+
+
+
 char bothSameUseParent( int inAObjectID, int inBObjectID );
 
 
