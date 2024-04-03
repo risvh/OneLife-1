@@ -671,3 +671,8 @@ void Picker::addFilter( char(*inUnclickableFunc)( int inID ) ) {
     mFilterFuncions.push_back( f );
     }
 
+
+void Picker::removeFilters() {
+    mFilterFuncions.deleteAll();
+    }
+
